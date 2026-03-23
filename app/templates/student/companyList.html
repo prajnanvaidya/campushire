@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% block title %}Companies — CampusHire{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}{% for category, msg in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show mb-3">
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}{% endif %}
+    {% endwith %}
+
+    <!-- Topbar -->
+    <div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-3">
+        <div>
+            <div class="page-title">Companies</div>
+            <div class="page-subtitle">
+                Explore companies recruiting on campus
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('student.companies', filter='all') }}"
+               class="filter-pill {% if active_filter == 'all' %}active{% endif %}">
+                All
+            </a>
+            <a href="{{ url_for('student.companies', filter='hiring') }}"
+               class="filter-pill {% if active_filter == 'hiring' %}active{% endif %}">
+                Currently Hiring
+            </a>
+            <a href="{{ url_for('student.companies', filter='applied') }}"
+               class="filter-pill {% if active_filter == 'applied' %}active{% endif %}">
+                Applied
+            </a>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-mini stat-mini-green">
+                <div class="stat-mini-num" style="color:#1a3d1a;">
+                    {{ total_count }}
+                </div>
+                <div class="stat-mini-label">Total Companies</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-mini stat-mini-teal">
+                <div class="stat-mini-num" style="color:#3b6d11;">
+                    {{ hiring_count }}
+                </div>
+                <div class="stat-mini-label">Currently Hiring</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Company Grid -->
+    {% if companies.items %}
+    <div class="row g-3 mb-3">
+        {% for company in companies.items %}
+        <div class="col-md-6 col-lg-4">
+            <div class="stud-comp-card h-100">
+                <div class="p-3">
+
+                    <!-- Company header -->
+                    <div class="d-flex align-items-start gap-3 mb-3">
+                        <div class="stud-comp-av">
+                            {{ (company.name or 'NA')[:2].upper() }}
+                        </div>
+                        <div class="flex-grow-1 min-width-0">
+                            <div class="row-name" style="font-size:0.9rem;">
+                                {{ company.name }}
+                            </div>
+                            {% if company.website %}
+                                <div class="row-meta">
+                                    <a href="{{ company.website }}" target="_blank"
+                                       style="color:#2e7d32;text-decoration:none;font-size:11px;">
+                                        {{ company.website | replace('https://','') | replace('http://','') }}
+                                    </a>
+                                </div>
+                            {% endif %}
+                            <div class="d-flex gap-1 flex-wrap mt-1">
+                                {% if active_drives.get(company.id, 0) > 0 %}
+                                    <span class="stud-comp-hiring-badge">
+                                        ● {{ active_drives.get(company.id) }} open drive{{ 's' if active_drives.get(company.id) != 1 else '' }}
+                                    </span>
+                                {% endif %}
+                                {% if company.id in applied_company_ids %}
+                                    <span class="stud-comp-applied-badge">Applied</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    {% if company.description %}
+                        <div class="stud-comp-desc mb-3">
+                            {{ company.description }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Footer row -->
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="row-meta small">
+                            {% if company.hr_contact %}
+                                📞 {{ company.hr_contact }}
+                            {% endif %}
+                        </div>
+                        {% if active_drives.get(company.id, 0) > 0 %}
+                            <a href="{{ url_for('student.drives', company=company.id) }}" class="stud-comp-view-btn">
+                                View Drives →
+                            </a>
+                        {% else %}
+                            <span class="text-muted small">No open drives</span>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="card section-card">
+        <div class="p-5 text-center text-muted">
+            <div style="font-size:2rem;margin-bottom:8px;">🏢</div>
+            <div class="small">No companies found for this filter.</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Pagination -->
+    {% if companies.pages > 1 %}
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-2">
+        <span class="text-muted small">
+            Page {{ companies.page }} of {{ companies.pages }}
+        </span>
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if not companies.has_prev %}disabled{% endif %}">
+                    <a class="page-link"
+                       href="{{ url_for('student.companies', filter=active_filter, page=companies.prev_num) }}">
+                        Previous
+                    </a>
+                </li>
+                {% for p in companies.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                        <li class="page-item {% if p == companies.page %}active{% endif %}">
+                            <a class="page-link"
+                               href="{{ url_for('student.companies', filter=active_filter, page=p) }}">
+                                {{ p }}
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item {% if not companies.has_next %}disabled{% endif %}">
+                    <a class="page-link"
+                       href="{{ url_for('student.companies', filter=active_filter, page=companies.next_num) }}">
+                        Next
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

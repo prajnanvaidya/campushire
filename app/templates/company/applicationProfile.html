@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+{% block title %}Student-Application{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4" style="max-width:820px;">
+
+    <!-- Back -->
+    <a href="{{ redirect_to }}"
+       class="d-inline-flex align-items-center gap-1 mb-4 text-decoration-none fw-semibold small page-subtitle">
+        &larr; Back to {{back}}
+    </a>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}{% for category, msg in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show mb-3">
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}{% endif %}
+    {% endwith %}
+
+    <!-- Page Heading -->
+    <div class="mb-4">
+        <div class="page-title">Review Application</div>
+        <div class="page-subtitle">Mark student as Selected or Rejected based on interview performance</div>
+    </div>
+
+    <div class="row g-3">
+
+        <!-- LEFT — Student Details -->
+        <div class="col-md-6">
+
+            <!-- Student Profile Card -->
+            <div class="card section-card mb-3">
+                <div class="section-card-header">
+                    <span class="title">Student Profile</span>
+                </div>
+                <div class="p-4">
+
+                    <!-- Avatar + Name -->
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        <div class="app-stav">
+                            {{ (app.student.name or "NA")[:2].upper() }}
+                        </div>
+                        <div>
+                            <div class="row-name" style="font-size:1rem;">
+                                {{ app.student.name }}
+                            </div>
+                            <div class="row-meta">
+                                {{ app.student.usn }}
+                                {% if app.student.branch %}&nbsp;·&nbsp; {{ app.student.branch }}{% endif %}
+                                {% if app.student.graduation_year %}&nbsp;·&nbsp; Batch {{ app.student.graduation_year }}{% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Info rows -->
+                    <div class="app-info-row">
+                        <span>Email</span>
+                        <span>{{ app.student.email }}</span>
+                    </div>
+                    <div class="app-info-row">
+                        <span>Phone</span>
+                        <span>{{ app.student.phone if app.student.phone else 'Not provided' }}</span>
+                    </div>
+                    <div class="app-info-row">
+                        <span>CGPA</span>
+                        <span>
+                            {% if app.student.cgpa %}
+                                {% if app.student.cgpa >= 8.0 %}
+                                    <span class="badge rounded-pill cgpa-high">{{ app.student.cgpa }}</span>
+                                {% elif app.student.cgpa >= 7.0 %}
+                                    <span class="badge rounded-pill cgpa-mid">{{ app.student.cgpa }}</span>
+                                {% else %}
+                                    <span class="badge rounded-pill cgpa-low">{{ app.student.cgpa }}</span>
+                                {% endif %}
+                            {% else %}—{% endif %}
+                        </span>
+                    </div>
+                    <div class="app-info-row">
+                        <span>Branch</span>
+                        <span>{{ app.student.branch if app.student.branch else '—' }}</span>
+                    </div>
+                    <div class="app-info-row">
+                        <span>Graduation</span>
+                        <span>{{ app.student.graduation_year if app.student.graduation_year else '—' }}</span>
+                    </div>
+                    <div class="app-info-row">
+                        <span>Applied On</span>
+                        <span>{{ app.created_at.strftime('%d %b %Y') }}</span>
+                    </div>
+                    <div class="app-info-row">
+                        <span>Status</span>
+                        <span>
+                            {% if app.status == 'Applied' %}
+                                <span class="badge rounded-pill badge-applied">In Progress</span>
+                            {% elif app.status == 'Selected' %}
+                                <span class="badge rounded-pill badge-selected">Selected ✓</span>
+                            {% elif app.status == 'Rejected' %}
+                                <span class="badge rounded-pill badge-rejected">Not Selected</span>
+                            {% else %}
+                                <span class="badge rounded-pill badge-cancelled">Withdrawn</span>
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <!-- Resume -->
+                    {% if app.student.resume %}
+                        <a href="{{ app.student.resume }}" target="_blank"
+                           class="btn-view-action d-inline-flex align-items-center gap-1 mt-3">
+                            📄 View Resume ↗
+                        </a>
+                    {% else %}
+                        <p class="text-muted small mt-3">No resume provided</p>
+                    {% endif %}
+
+                </div>
+            </div>
+
+            <!-- Applied For Card -->
+            <div class="card section-card">
+                <div class="section-card-header">
+                    <span class="title">Applied For</span>
+                </div>
+                <div class="p-3 d-flex align-items-center gap-3">
+                    <div class="drive-av drive-av-green">
+                        {{ (app.drive.company.name or "NA")[:2].upper() }}
+                    </div>
+                    <div>
+                        <div class="row-name">{{ app.drive.job_title }}</div>
+                        <div class="row-meta">
+                            {{ app.drive.company.name }}
+                            {% if app.drive.salary_package %}
+                                &nbsp;·&nbsp; {{ app.drive.salary_package }} LPA
+                            {% endif %}
+                            &nbsp;·&nbsp; Drive: {{ app.drive.drive_date.strftime('%d %b %Y') }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT — Decision Panel -->
+        <div class="col-md-6">
+            <div class="card section-card h-100">
+                <div class="section-card-header">
+                    <span class="title">Decision</span>
+                </div>
+                <div class="p-4">
+
+                    <!-- Quick Summary -->
+                    <div class="app-summary-box">
+                        <div class="app-summary-title">Quick Summary</div>
+                        <div class="app-summary-row">
+                            <span>CGPA</span>
+                            <span>{{ app.student.cgpa if app.student.cgpa else '—' }}</span>
+                        </div>
+                        <div class="app-summary-row">
+                            <span>Branch</span>
+                            <span>{{ app.student.branch if app.student.branch else '—' }}</span>
+                        </div>
+                        <div class="app-summary-row">
+                            <span>Graduation</span>
+                            <span>{{ app.student.graduation_year if app.student.graduation_year else '—' }}</span>
+                        </div>
+                        <div class="app-summary-row">
+                            <span>Eligibility</span>
+                            <span class="badge-active">✓ Met</span>
+                        </div>
+                    </div>
+
+                    <!-- Action note -->
+                    <p class="app-action-note">
+                        Based on the interview performance, mark this student as
+                        <strong>Selected</strong> or <strong>Rejected</strong>.
+                        This action is <strong>permanent</strong> and cannot be undone.
+                        The student will see the updated status immediately on their dashboard.
+                    </p>
+
+                    {% if app.status == 'Applied' %}
+
+                        <!--
+                            Two submit buttons inside one form.
+                            name="decision" on both — whichever is clicked
+                            sends its value to request.form.get('decision')
+                        -->
+                        <form method="POST"
+                              action="{{ url_for('company.reviewApplication', appId=app.id) }}">
+
+                            <button type="submit"
+                                    name="decision"
+                                    value="Select"
+                                    class="btn-select-stud">
+                                ✓ &nbsp; Select Student
+                            </button>
+
+                            <button type="submit"
+                                    name="decision"
+                                    value="Reject"
+                                    class="btn-reject-stud">
+                                ✗ &nbsp; Reject Student
+                            </button>
+
+                        </form>
+
+                        <div class="app-final-note">
+                            Both actions are final.<br>
+                            The student will be notified via their dashboard.
+                        </div>
+
+                    {% elif app.status == 'Selected' %}
+                        <div class="decision-finalized-green">
+                            <span class="decision-icon">✓</span>
+                            <div>
+                                <div class="decision-title-green">Student Selected</div>
+                                <div class="decision-sub-green">This application has been finalized.</div>
+                            </div>
+                        </div>
+
+                    {% elif app.status == 'Rejected' %}
+                        <div class="decision-finalized-red">
+                            <span class="decision-icon">✗</span>
+                            <div>
+                                <div class="decision-title-red">Student Not Selected</div>
+                                <div class="decision-sub-red">This application has been finalized.</div>
+                            </div>
+                        </div>
+
+                    {% else %}
+                        <div class="decision-finalized-grey">
+                            <span class="decision-icon">—</span>
+                            <div>
+                                <div class="decision-title-grey">Application Withdrawn</div>
+                                <div class="decision-sub-grey">This application was withdrawn automatically.</div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

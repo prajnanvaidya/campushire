@@ -1,0 +1,65 @@
+<nav class="navbar navbar-expand-lg navbar-light shadow-sm">
+    <div class="container-fluid">
+
+        {% if role is defined and role in ["admin", "student", "company"] %}
+
+            <!-- Sidebar toggle — leftmost -->
+            <button class="sidebar-nav-toggle me-2"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#appSidebar"
+                    aria-expanded="true"
+                    aria-controls="appSidebar"
+                    title="Toggle sidebar">
+                <i class="bi bi-layout-sidebar"></i>
+            </button>
+
+            {% if role == "admin" %}
+                <!-- Search bar -->
+                <form class="d-flex admin-search-form" action="{{url_for('admin.search')}}">
+                    <input type="search" name='q' placeholder="Search students or companies" class="form-control me-2">
+                    <button type="submit" class="btn btn-success">Search</button>
+                </form>
+            {% endif %}
+
+            <!-- Logo -->
+            <a class="navbar-brand d-flex align-items-center ms-auto" href="{{url_for('home.house')}}">
+                <img src="{{url_for('static', filename='images/logo.png')}}" alt="logo" class="me-2">
+            </a>
+
+        {% else %}
+
+            <!-- Guest-logo -->
+            <a class="navbar-brand d-flex align-items-center" href="{{url_for('home.house')}}">
+                <img src="{{url_for('static', filename='images/logo.png')}}" alt="logo" class="me-2">
+            </a>
+
+            <!-- Mobile toggle — only for guest, collapses nav links -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{url_for('home.house')}}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{url_for('auth.login')}}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{url_for('auth.register')}}">Register</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{url_for('home.house')}}#contact">Contact</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{url_for('home.house')}}#about">About</a>
+                    </li>
+                </ul>
+            </div>
+
+        {% endif %}
+
+    </div>
+</nav>

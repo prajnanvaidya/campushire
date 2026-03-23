@@ -18,7 +18,7 @@ class Company(db.Model):
 
     hr_contact=db.Column(db.String(20))
     website=db.Column(db.String(200))
-    description=db.Column(db.Text)
+    description=db.Column(db.Text)  
     
     approval_status=db.Column(db.Enum("Pending", "Approved", "Rejected"), default="Pending", nullable=False)
     is_blacklisted=db.Column(db.Boolean, default=False)
@@ -32,6 +32,7 @@ class Student(db.Model):
     id=db.Column(db.Integer, primary_key=True)
     name=db.Column(db.String(150), nullable=False)
     email=db.Column(db.String(200), unique=True, nullable=False)
+    usn=db.Column(db.String(20), nullable=False, unique=True)
     password_hash=db.Column(db.String(200), nullable=False)
 
     phone=db.Column(db.String(20))
@@ -54,11 +55,16 @@ class PlacementDrive(db.Model):
 
     job_description=db.Column(db.Text)
     eligibility_criteria=db.Column(db.String(200))
+    min_cgpa = db.Column(db.Float, nullable=True)       
+    eligible_branches = db.Column(db.String(200), nullable=True)
+    eligible_batches = db.Column(db.String(100), nullable=True) 
     salary_package = db.Column(db.String(50))
-    location = db.Column(db.String(100))
-    application_deadline = db.Column(db.Date)
+    application_deadline = db.Column(db.Date, nullable=False)
+    drive_date=db.Column(db.Date, nullable=False)
 
-    approval_status=db.Column(db.Enum("Pending", "Approved", "Rejected", "Closed"), default="Pending", nullable=False)
+    approval_status=db.Column(db.Enum("Pending","Approved", "Rejected", "Closed"), default="Pending", nullable=False)
+    date_rejected=db.Column(db.Boolean, default=False)
+    date_rejection_note=db.Column(db.String(300), nullable=True )  
     created_at=db.Column(db.DateTime, default=datetime.utcnow)
     
     applications=db.relationship("Application", backref="drive", lazy=True)
@@ -69,14 +75,14 @@ class Application(db.Model):
     id=db.Column(db.Integer, primary_key=True)
     student_id=db.Column(db.Integer, db.ForeignKey("students.id"), nullable=False)
     drive_id=db.Column(db.Integer, db.ForeignKey("placement_drives.id"), nullable=False)
-    submited_date=db.Column(db.DateTime, default=datetime.utcnow)
 
-    status=db.Column(db.Enum("Applied", "Shortlisted", "Selected", "Rejected"), default="Applied", nullable=False)
+    status=db.Column(db.Enum("Applied", "Cancelled", "Selected", "Rejected"), default="Applied", nullable=False)
+    created_at=db.Column(db.DateTime, default=datetime.utcnow)
 
     __table_args__=(db.UniqueConstraint("student_id", "drive_id", name="unique_student_application"), )
 
 #Placement Stats(Additional table)
-class PlacementStat(db.Model):
+class PlacementStat(db.Model):  
     __tablename__="placement_stats"
     id=db.Column(db.Integer, primary_key=True)
     student_id=db.Column(db.Integer, db.ForeignKey("students.id"), nullable=False)

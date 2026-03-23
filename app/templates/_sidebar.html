@@ -1,0 +1,143 @@
+<div class="sidebar-inner">
+
+    {% if role == "admin" %}
+    <div class="sidebar-section-label">Overview</div>
+    <a href="{{ url_for('admin.dashboard') }}"
+       class="sidebar-link {% if page == 'dashboard' %}active{% endif %}">
+        <i class="bi bi-grid-1x2"></i>
+        <span class="sidebar-link-text">Dashboard</span>
+    </a>
+
+    <div class="sidebar-section-label">Manage</div>
+    <a href="{{ url_for('admin.companies') }}"
+       class="sidebar-link {% if page == 'companies' %}active{% endif %}">
+        <i class="bi bi-building"></i>
+        <span class="sidebar-link-text">Companies</span>
+        <span class="sidebar-badge">{{ company_count }}</span>
+    </a>
+    <a href="{{ url_for('admin.students') }}"
+       class="sidebar-link {% if page == 'students' %}active{% endif %}">
+        <i class="bi bi-mortarboard"></i>
+        <span class="sidebar-link-text">Students</span>
+        <span class="sidebar-badge">{{ student_count }}</span>
+    </a>
+    <a href="{{ url_for('admin.drives') }}"
+       class="sidebar-link {% if page == 'drives' %}active{% endif %}">
+        <i class="bi bi-calendar-event"></i>
+        <span class="sidebar-link-text">Drives</span>
+        <span class="sidebar-badge">{{ drive_count }}</span>
+    </a>
+    <a href="{{ url_for('admin.applications') }}"
+       class="sidebar-link {% if page == 'applications' %}active{% endif %}">
+        <i class="bi bi-send"></i>
+        <span class="sidebar-link-text">Applications</span>
+        <span class="sidebar-badge">{{ app_count }}</span>
+    </a>
+
+    <div class="sidebar-section-label">Pending</div>
+    <a href="{{ url_for('admin.companies', filter='pending') }}"
+       class="sidebar-link {% if page == 'approvals' %}active{% endif %}">
+        <i class="bi bi-hourglass-split"></i>
+        <span class="sidebar-link-text">Approvals</span>
+        {% if pending_count > 0 %}
+        <span class="sidebar-badge sidebar-badge-amber">{{ pending_count }}</span>
+        {% endif %}
+    </a>
+
+    <div class="sidebar-section-label">Account</div>
+    <a href="{{ url_for('auth.logout') }}" class="sidebar-link sidebar-link-danger">
+        <i class="bi bi-box-arrow-right"></i>
+        <span class="sidebar-link-text">Logout</span>
+    </a>
+
+    {% elif role == "student" %}
+    <div class="sidebar-section-label">Overview</div>
+    <a href="{{ url_for('student.dashboard') }}"
+       class="sidebar-link {% if page == 'dashboard' %}active{% endif %}">
+        <i class="bi bi-grid-1x2"></i>
+        <span class="sidebar-link-text">Dashboard</span>
+    </a>
+
+    <div class="sidebar-section-label">Explore</div>
+    <a href="{{ url_for('student.companies') }}"
+       class="sidebar-link {% if page == 'companies' %}active{% endif %}">
+        <i class="bi bi-building"></i>
+        <span class="sidebar-link-text">Companies</span>
+    </a>
+    <a href="{{ url_for('student.drives') }}"
+       class="sidebar-link {% if page == 'drives' %}active{% endif %}">
+        <i class="bi bi-calendar-event"></i>
+        <span class="sidebar-link-text">Drives</span>
+    </a>
+
+    <div class="sidebar-section-label">My Activity</div>
+    <a href="{{ url_for('student.applications') }}"
+       class="sidebar-link {% if page == 'applications' %}active{% endif %}">
+        <i class="bi bi-send"></i>
+        <span class="sidebar-link-text">My Applications</span>
+    </a>
+
+    <div class="sidebar-section-label">Account</div>
+    <a href="{{ url_for('student.editProfile') }}"
+       class="sidebar-link {% if page == 'profile' %}active{% endif %}">
+        <i class="bi bi-person-gear"></i>
+        <span class="sidebar-link-text">Edit Profile</span>
+    </a>
+    <a href="{{ url_for('auth.logout') }}" class="sidebar-link sidebar-link-danger">
+        <i class="bi bi-box-arrow-right"></i>
+        <span class="sidebar-link-text">Logout</span>
+    </a>
+
+    {% elif role == "company" %}
+        <div class="sidebar-section-label">Overview</div>
+        <a href="{{ url_for('company.dashboard') }}"
+        class="sidebar-link {% if page == 'dashboard' %}active{% endif %}">
+            <i class="bi bi-grid-1x2"></i>
+            <span class="sidebar-link-text">Dashboard</span>
+        </a>
+
+        <div class="sidebar-section-label">Manage</div>
+
+        {% if company_state == 'Approved' %}
+            <!-- Approved — fully clickable -->
+            <a href="{{ url_for('company.drives') }}"
+            class="sidebar-link {% if page == 'drives' %}active{% endif %}">
+                <i class="bi bi-calendar-event"></i>
+                <span class="sidebar-link-text">My Drives</span>
+                <span class="sidebar-badge">{{ side_drive_count }}</span>
+            </a>
+            <a href="{{ url_for('company.applications') }}"
+            class="sidebar-link {% if page == 'applications' %}active{% endif %}">
+                <i class="bi bi-people"></i>
+                <span class="sidebar-link-text">Applications</span>
+                <span class="sidebar-badge">{{ side_application_count }}</span>
+            </a>
+
+        {% else %}
+            <!-- Pending or Rejected — locked, not clickable -->
+            <span class="sidebar-link sidebar-link-locked">
+                <i class="bi bi-calendar-event"></i>
+                <span class="sidebar-link-text">My Drives</span>
+                <i class="bi bi-lock ms-auto" style="font-size:10px;color:#c8b89a;"></i>
+            </span>
+            <span class="sidebar-link sidebar-link-locked">
+                <i class="bi bi-people"></i>
+                <span class="sidebar-link-text">Applications</span>
+                <i class="bi bi-lock ms-auto" style="font-size:10px;color:#c8b89a;"></i>
+            </span>
+        {% endif %}
+
+        <div class="sidebar-section-label">Account</div>
+        <a href="{{ url_for('company.editProfile') }}"
+        class="sidebar-link {% if page == 'profile' %}active{% endif %}">
+            <i class="bi bi-person-gear"></i>
+            <span class="sidebar-link-text">Edit Profile</span>
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="sidebar-link sidebar-link-danger">
+            <i class="bi bi-box-arrow-right"></i>
+            <span class="sidebar-link-text">Logout</span>
+        </a>
+
+    {% endif %}
+
+</div>

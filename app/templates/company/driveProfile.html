@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+{% block title %}{{ drive.job_title }} — Drive Profile{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4" style="max-width:900px;">
+
+    <!-- Back -->
+    <a href="{{ redirect_to }}"
+       class="d-inline-flex align-items-center gap-1 mb-4 text-decoration-none fw-semibold small"
+       style="color:#2e7d32;">
+        &larr; Back to {{back}}
+    </a>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}{% for category, msg in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show mb-3">
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}{% endif %}
+    {% endwith %}
+
+    <!-- Date Rejection Banner -->
+    {% if drive.date_rejected %}
+    <div class="drive-rej-banner">
+        <span style="font-size:1.4rem;flex-shrink:0;">⚠</span>
+        <div>
+            <div class="drb-title">
+                Drive date rejected by admin — {{ drive.job_title }}
+            </div>
+            <div class="drb-sub">
+                Propose a new date — students cannot apply until a date is confirmed.
+            </div>
+            {% if drive.date_rejection_note %}
+            <div class="drb-note">
+                <strong>Admin's note:</strong> {{ drive.date_rejection_note }}
+            </div>
+            {% endif %}
+            <a href="{{ url_for('company.proposeDate', driveId=drive.id) }}"
+               class="drb-btn">
+                Propose New Date →
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Header Card -->
+    <div class="card section-card mb-3 p-4">
+        <div class="d-flex align-items-center gap-4 flex-wrap">
+
+            <div class="drive-profile-av
+                {{ 'company-av-red' if drive.approval_status == 'Rejected'
+                else 'company-av-amber' if drive.approval_status == 'Pending' or drive.date_rejected
+                else 'comp-av-teal' if drive.approval_status == 'Closed'
+                else 'company-av-green' }}">
+                {{ (drive.company.name or 'NA')[:2].upper() }}
+            </div>
+
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                    <span class="page-title" style="font-size:1.05rem;">
+                        {{ drive.job_title }}
+                    </span>
+                    {% if drive.date_rejected %}
+                        <span class="rescheduling-badge">↩ Rescheduling</span>
+                    {% elif drive.approval_status == 'Pending' %}
+                        <span class="pending-badge">⏳ Under Review</span>
+                    {% elif drive.approval_status == 'Approved' %}
+                        <span class="badge rounded-pill badge-active">Live</span>
+                    {% elif drive.approval_status == 'Closed' %}
+                        <span class="badge rounded-pill badge-closed">Ended</span>
+                    {% elif drive.approval_status == 'Rejected' %}
+                        <span class="badge rounded-pill badge-rejected">Cancelled</span>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-3 flex-wrap">
+                    <span class="row-meta">{{ drive.company.name }}</span>
+                    {% if drive.salary_package %}
+                        <span class="row-meta">·</span>
+                        <span class="row-meta">{{ drive.salary_package }} LPA</span>
+                    {% endif %}
+                    <span class="row-meta">·</span>
+                    <span class="row-meta">
+                        Posted {{ drive.created_at.strftime('%d %b %Y') }}
+                    </span>
+                </div>
+            </div>
+
+            {% if drive.approval_status == 'Closed' %}
+            <a href="{{ url_for('company.recruitedDetails', driveId=drive.id) }}"
+               class="btn-view-action flex-shrink-0">
+                Recruited
+            </a>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <!-- Key Dates + Stats -->
+    <div class="row g-3 mb-3">
+
+        <div class="col-md-6">
+            <div class="card section-card h-100">
+                <div class="section-card-header">
+                    <span class="title">Key Dates</span>
+                </div>
+                <div class="meta-grid-2">
+                    <div>
+                        <div class="meta-label">Application Deadline</div>
+                        <div class="meta-value">
+                            {{ drive.application_deadline.strftime('%d %b %Y') }}
+                        </div>
+                        {% if drive.approval_status == 'Approved' %}
+                            {% set dl_days = (drive.application_deadline - now.date()).days %}
+                            {% if dl_days < 0 %}
+                                <div class="meta-sub" style="color:#c62828;">Deadline passed</div>
+                            {% elif dl_days <= 3 %}
+                                <div class="meta-sub" style="color:#e65100;">⚠ {{ dl_days }}d left</div>
+                            {% else %}
+                                <div class="meta-sub" style="color:#3b6d11;">{{ dl_days }}d away</div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    <div>
+                        <div class="meta-label">Drive Date</div>
+                        <div class="meta-value">
+                            {% if drive.approval_status == 'Pending' %}
+                                <span style="color:#854f0b;">
+                                    {{ drive.drive_date.strftime('%d %b %Y') }}
+                                </span>
+                                <div class="meta-sub" style="color:#a05000;">
+                                    Tentative — not confirmed
+                                </div>
+                            {% elif drive.approval_status == 'Rejected' %}
+                                <span class="text-muted small">Drive cancelled</span>
+                            {% else %}
+                                {{ drive.drive_date.strftime('%d %b %Y') }}
+                                {% if drive.approval_status == 'Approved' %}
+                                    {% set dd_days = (drive.drive_date - now.date()).days %}
+                                    {% if dd_days >= 0 %}
+                                        <div class="meta-sub" style="color:#3b6d11;">
+                                            {{ dd_days }}d away
+                                        </div>
+                                    {% else %}
+                                        <div class="meta-sub" style="color:#5f5e5a;">Ended</div>
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card section-card h-100">
+                <div class="section-card-header">
+                    <span class="title">Application Stats</span>
+                </div>
+                {% if drive.approval_status == 'Rejected' %}
+                    <div class="p-3">
+                        <span class="badge rounded-pill badge-rejected">
+                            All applications cancelled
+                        </span>
+                    </div>
+                {% else %}
+                    <div class="meta-grid-3" style="border-bottom:none;">
+                        <div>
+                            <div class="meta-label">Total</div>
+                            <div class="meta-value">{{ total_applications or 0 }}</div>
+                        </div>
+                        <div>
+                            <div class="meta-label">In Progress</div>
+                            <div class="meta-value" style="color:#185fa5;">
+                                {{ in_progress_count or 0 }}
+                            </div>
+                        </div>
+                        <div>
+                            <div class="meta-label">Selected</div>
+                            <div class="meta-value" style="color:#3b6d11;">
+                                {{ selected_count or 0 }}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Drive Details -->
+    <div class="card section-card mb-3">
+        <div class="section-card-header">
+            <span class="title">Drive Details</span>
+        </div>
+        <div class="meta-grid-3">
+            <div>
+                <div class="meta-label">Salary Package</div>
+                <div class="meta-value">
+                    {{ drive.salary_package if drive.salary_package else '—' }}
+                </div>
+            </div>
+            <div>
+                <div class="meta-label">Eligibility Criteria</div>
+                <div class="meta-value" style="font-size:0.82rem;">
+                    {{ drive.eligibility_criteria if drive.eligibility_criteria else '—' }}
+                </div>
+            </div>
+            <div>
+                <div class="meta-label">Status</div>
+                <div class="meta-value">
+                    {% if drive.date_rejected %}
+                        Reschedule Required
+                    {% elif drive.approval_status == 'Pending' %}
+                        Under Review
+                    {% elif drive.approval_status == 'Approved' %}
+                        Live
+                    {% elif drive.approval_status == 'Closed' %}
+                        Ended
+                    {% else %}
+                        Cancelled
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% if drive.job_description %}
+        <div class="p-3" style="border-top:0.5px solid #edf5ed;">
+            <div class="meta-label mb-2">Job Description</div>
+            <p class="small mb-0" style="color:#1a3d1a;line-height:1.7;">
+                {{ drive.job_description }}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Applicants Table -->
+    <div class="card section-card">
+        <div class="section-card-header d-flex align-items-center justify-content-between">
+            <span class="title">Applicants</span>
+            <span class="badge rounded-pill badge-closed">
+                {{ total_applications or 0 }} total
+            </span>
+        </div>
+
+        <table class="admin-table table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Student</th>
+                    <th>USN</th>
+                    <th>Branch</th>
+                    <th>CGPA</th>
+                    <th>Applied On</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in application_list %}
+                <tr>
+                    <td class="font-monospace text-muted small">
+                        {{ '%02d' % loop.index }}
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="applicant-av
+                                {{ 'applicant-av-red' if app.student.is_blacklisted else 'applicant-av-green' }}">
+                                {{ app.student.name[:2].upper() }}
+                            </div>
+                            <div>
+                                <div class="row-name">{{ app.student.name }}</div>
+                                <div class="row-meta">
+                                    {{ app.student.email }}
+                                    {% if app.student.is_blacklisted %}
+                                        <span style="color:#c62828;font-size:10px;">
+                                            &nbsp;· Restricted
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="font-monospace text-muted small">
+                        {{ app.student.usn }}
+                    </td>
+                    <td class="small">
+                        {{ app.student.branch if app.student.branch else '—' }}
+                    </td>
+                    <td>
+                        {% if app.student.cgpa %}
+                            {% if app.student.cgpa >= 8.0 %}
+                                <span class="badge rounded-pill cgpa-high">
+                                    {{ app.student.cgpa }}
+                                </span>
+                            {% elif app.student.cgpa >= 7.0 %}
+                                <span class="badge rounded-pill cgpa-mid">
+                                    {{ app.student.cgpa }}
+                                </span>
+                            {% else %}
+                                <span class="badge rounded-pill cgpa-low">
+                                    {{ app.student.cgpa }}
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="font-monospace text-muted small">
+                        {{ app.created_at.strftime('%d %b %Y') }}
+                    </td>
+                    <td>
+                        {% if app.status == 'Applied' %}
+                            <span class="badge rounded-pill badge-applied">In Progress</span>
+                        {% elif app.status == 'Selected' %}
+                            <span class="badge rounded-pill badge-selected">Selected ✓</span>
+                        {% elif app.status == 'Rejected' %}
+                            <span class="badge rounded-pill badge-rejected">Not Selected</span>
+                        {% else %}
+                            <span class="badge rounded-pill badge-cancelled">Withdrawn</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if app.status == 'Applied' %}
+                            <a href="{{ url_for('company.reviewApplication', appId=app.id) }}"
+                               class="btn-view-action">Review</a>
+                        {% else %}
+                            <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-muted text-center py-4">
+                        No applications yet for this drive.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="section-note">
+            ℹ Only In Progress applications can be reviewed. Click Review to mark a student as Selected or Rejected after the interview.
+        </div>
+    </div>
+
+</div>
+{% endblock %}

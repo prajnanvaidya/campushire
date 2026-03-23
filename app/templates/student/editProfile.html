@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block title %}Edit Profile — {{ student.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4" style="max-width:680px;">
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}{% for category, msg in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show mb-3">
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}{% endif %}
+    {% endwith %}
+
+    <div class="mb-4">
+        <div class="page-title">Edit Profile</div>
+        <div class="page-subtitle">Update your academic and contact details</div>
+    </div>
+
+    <!-- Identity Card — read only -->
+    <div class="card section-card mb-3">
+        <div class="section-card-header">
+            <span class="title">Student Identity</span>
+            <span class="text-muted small">Read only</span>
+        </div>
+        <div class="p-4">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="profile-av-lg stud-av">
+                    {{ (student.name or 'NA')[:2].upper() }}
+                </div>
+                <div>
+                    <div class="row-name" style="font-size:1rem;">{{ student.name }}</div>
+                    <div class="row-meta">
+                        {{ student.usn }}
+                        {% if student.branch %}&nbsp;·&nbsp; {{ student.branch }}{% endif %}
+                        {% if student.graduation_year %}&nbsp;·&nbsp; Batch {{ student.graduation_year }}{% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="profile-field-label">Name</label>
+                    <input type="text" class="profile-field-input profile-readonly"
+                           value="{{ student.name }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="profile-field-label">USN</label>
+                    <input type="text" class="profile-field-input profile-readonly"
+                           value="{{ student.usn }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="profile-field-label">Email</label>
+                    <input type="text" class="profile-field-input profile-readonly"
+                           value="{{ student.email }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="profile-field-label">Branch</label>
+                    <input type="text" class="profile-field-input profile-readonly"
+                           value="{{ student.branch if student.branch else '—' }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="profile-field-label">Graduation Year</label>
+                    <input type="text" class="profile-field-input profile-readonly"
+                           value="{{ student.graduation_year if student.graduation_year else '—' }}" readonly>
+                </div>
+            </div>
+        </div>
+        <div class="section-note">
+            ℹ Name, USN, email, branch and graduation year cannot be changed. Contact the placement coordinator if correction is needed.
+        </div>
+    </div>
+
+    <!-- Editable Fields -->
+    <form method="POST" action="{{ url_for('student.editProfile') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="card section-card mb-3">
+            <div class="section-card-header">
+                <span class="title">Updatable Details</span>
+            </div>
+            <div class="p-4">
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label class="profile-field-label">Phone Number</label>
+                        <input type="text" name="phone"
+                               class="profile-field-input"
+                               value="{{ student.phone if student.phone else '' }}"
+                               placeholder="10-digit number"
+                               maxlength="10">
+                        <div class="profile-field-hint">Used for placement coordinator contact</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="profile-field-label">CGPA</label>
+                        <input type="number" name="cgpa"
+                               class="profile-field-input"
+                               value="{{ student.cgpa if student.cgpa else '' }}"
+                               placeholder="e.g. 8.5"
+                               step="0.01" min="0" max="10">
+                        <div class="profile-field-hint">Between 0 and 10 — used for drive eligibility checks</div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="profile-field-label">Resume Link</label>
+                        <input type="text" name="resume"
+                               class="profile-field-input"
+                               value="{{ student.resume if student.resume else '' }}"
+                               placeholder="https://drive.google.com/...">
+                        <div class="profile-field-hint">Must start with http:// or https:// — shown to companies during review</div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end">
+            <button type="submit" class="profile-save-btn">Save Changes</button>
+        </div>
+
+    </form>
+
+</div>
+{% endblock %}

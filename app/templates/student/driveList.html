@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+{% block title %}Placement Drives{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}{% for category, msg in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show mb-3">
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}{% endif %}
+    {% endwith %}
+
+    <!-- Topbar -->
+    <div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-3">
+        <div>
+            <div class="page-title">
+                {% if company_filter %}
+                    Drives by {{ drives.items[0].company.name if drives.items else 'Company' }}
+                {% else %}
+                    Placement Drives
+                {% endif %}
+            </div>
+            <div class="page-subtitle">
+                {% if company_filter %}
+                    <a href="{{ url_for('student.companies') }}"
+                       style="color:#2e7d32;text-decoration:none;">← Back to Companies</a>
+                {% else %}
+                    Open drives you can apply to
+                {% endif %}
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('student.drives', filter='all') }}"
+               class="filter-pill {% if active_filter == 'all' %}active{% endif %}">All</a>
+            <a href="{{ url_for('student.drives', filter='closing') }}"
+               class="filter-pill {% if active_filter == 'closing' %}active{% endif %}">Closing Soon</a>
+            <a href="{{ url_for('student.drives', filter='applied') }}"
+               class="filter-pill {% if active_filter == 'applied' %}active{% endif %}">Applied</a>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-mini stat-mini-green">
+                <div class="stat-mini-num" style="color:#1a3d1a;">{{ total_count }}</div>
+                <div class="stat-mini-label">Open Drives</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-mini stat-mini-teal">
+                <div class="stat-mini-num" style="color:#3b6d11;">{{ applied_count }}</div>
+                <div class="stat-mini-label">Applied</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drives Table -->
+    <div class="card section-card">
+        <div class="section-card-header d-flex align-items-center justify-content-between">
+            <span class="title">Drive List</span>
+            <span class="badge rounded-pill badge-closed">
+                {{ drives.first or 0 }}–{{ drives.last or 0 }} of {{ drives.total }}
+            </span>
+        </div>
+
+        <table class="admin-table table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Drive</th>
+                    <th>Eligibility</th>
+                    <th>App Deadline</th>
+                    <th>Drive Date</th>
+                    <th>Package</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for drive in drives.items %}
+                <tr>
+                    <td class="font-monospace text-muted small">
+                        {{ '%03d' % drive.id }}
+                    </td>
+
+                    <!-- Drive -->
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="stud-drive-card-av">
+                                {{ (drive.company.name or 'NA')[:2].upper() }}
+                            </div>
+                            <div>
+                                <div class="row-name">{{ drive.job_title }}</div>
+                                <div class="row-meta">{{ drive.company.name }}</div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- Eligibility -->
+                    <td>
+                        {% set elig_text = [] %}
+                        {% if drive.min_cgpa %}
+                            {% if elig_text.append('CGPA ≥ ' ~ drive.min_cgpa) %}{% endif %}
+                        {% endif %}
+                        {% if drive.eligible_branches %}
+                            {% if elig_text.append(drive.eligible_branches) %}{% endif %}
+                        {% endif %}
+                        {% if drive.eligible_batches %}
+                            {% if elig_text.append('Batch ' ~ drive.eligible_batches) %}{% endif %}
+                        {% endif %}
+                        {% if elig_text %}
+                            <div class="row-meta small">{{ elig_text | join(' · ') }}</div>
+                        {% else %}
+                            <span class="text-muted small">Open to all</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- App Deadline -->
+                    <td>
+                        {% set dl_days = (drive.application_deadline - now.date()).days %}
+                        <div class="font-monospace text-muted small">
+                            {{ drive.application_deadline.strftime('%d %b %Y') }}
+                        </div>
+                        {% if dl_days < 0 %}
+                            <div class="row-meta" style="color:#c62828;">Closed</div>
+                        {% elif dl_days <= 3 %}
+                            <span class="badge rounded-pill dl-warn">⚠ {{ dl_days }}d left</span>
+                        {% else %}
+                            <span class="badge rounded-pill dl-safe">{{ dl_days }}d left</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Drive Date -->
+                    <td class="font-monospace text-muted small">
+                        {{ drive.drive_date.strftime('%d %b %Y') }}
+                    </td>
+
+                    <!-- Package -->
+                    <td>
+                        {% if drive.salary_package %}
+                            <span class="small" style="color:#00796b;font-weight:600;">
+                                {{ drive.salary_package }} LPA
+                            </span>
+                        {% else %}
+                            <span class="text-muted small">Not disclosed</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Action -->
+                    <td>
+                        {% if drive.id in applied_drive_ids %}
+                            <span class="badge rounded-pill badge-applied">Applied ✓</span>
+                        {% elif (drive.application_deadline - now.date()).days < 0 %}
+                            <span class="text-muted small">Deadline passed</span>
+                        {% else %}
+                            <form method="POST"
+                                  action="{{ url_for('student.apply', driveId=drive.id) }}"
+                                  style="display:inline;">
+                                <input type="hidden" name="next" value="drives">
+                                <button type="submit" class="stud-apply-btn">Apply</button>
+                            </form>
+                        {% endif %}
+                    </td>
+
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-muted text-center py-4">
+                        No drives found for this filter.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="section-note">
+            ℹ Only approved drives are shown. Apply before the deadline — you cannot withdraw once applied.
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex align-items-center justify-content-between px-3 py-3 flex-wrap gap-2">
+            <span class="text-muted small">
+                Page {{ drives.page }} of {{ drives.pages }}
+            </span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item {% if not drives.has_prev %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ url_for('student.drives', filter=active_filter, page=drives.prev_num, company=company_filter) }}">
+                            Previous
+                        </a>
+                    </li>
+                    {% for p in drives.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if p %}
+                            <li class="page-item {% if p == drives.page %}active{% endif %}">
+                                <a class="page-link"
+                                   href="{{ url_for('student.drives', filter=active_filter, page=p, company=company_filter) }}">
+                                    {{ p }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if not drives.has_next %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ url_for('student.drives', filter=active_filter, page=drives.next_num, company=company_filter) }}">
+                            Next
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

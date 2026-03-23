@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% block title %}Search — {{ query }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4" style="max-width:900px;">
+
+    <!-- Topbar -->
+    <div class="mb-4">
+        <div class="page-title">Search Results</div>
+        <div class="page-subtitle">
+            {{ total }} result{{ 's' if total != 1 else '' }} for
+            "<strong style="color:#1a3d1a;">{{ query }}</strong>"
+        </div>
+    </div>
+
+    <!-- Search bar to refine -->
+    <form class="d-flex gap-2 mb-4" action="{{ url_for('admin.search') }}">
+        <input type="search" name="q" value="{{ query }}"
+               class="form-control auth-input flex-grow-1"
+               placeholder="Search by name, email, USN, branch...">
+        <button type="submit" class="btn profile-save-btn">Search</button>
+    </form>
+
+    <!-- No results -->
+    {% if not students and not companies %}
+    <div class="card section-card">
+        <div class="p-5 text-center text-muted">
+            <div style="font-size:2.5rem;margin-bottom:8px;">🔍</div>
+            <div class="row-name mb-1">No results found</div>
+            <div class="small">
+                No students or companies matched
+                "<strong>{{ query }}</strong>".
+                Try a different name, email, USN or branch.
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+
+    <!-- ── COMPANIES ── -->
+    {% if companies %}
+    <div class="card section-card mb-3">
+        <div class="section-card-header d-flex align-items-center justify-content-between">
+            <span class="title">Companies</span>
+            <span class="badge rounded-pill badge-closed">
+                {{ companies | length }} found
+            </span>
+        </div>
+
+        <table class="admin-table table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Company</th>
+                    <th>Email</th>
+                    <th>Drives</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for company in companies %}
+                <tr>
+                    <!-- Company avatar + name -->
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="applicant-av
+                                {% if company.is_blacklisted %}applicant-av-red
+                                {% elif company.approval_status == 'Approved' %}applicant-av-green
+                                {% elif company.approval_status == 'Pending' %}applicant-av-amber
+                                {% else %}applicant-av-red{% endif %}">
+                                {{ (company.name or 'NA')[:2].upper() }}
+                            </div>
+                            <div>
+                                <div class="row-name">{{ company.name }}</div>
+                                {% if company.hr_contact %}
+                                    <div class="row-meta">{{ company.hr_contact }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- Email -->
+                    <td class="small text-muted">{{ company.email }}</td>
+
+                    <!-- Drive count -->
+                    <td>
+                        <span class="badge rounded-pill badge-closed">
+                            {{ company.drives | length }} drive{{ 's' if company.drives | length != 1 else '' }}
+                        </span>
+                    </td>
+
+                    <!-- Status -->
+                    <td>
+                        {% if company.is_blacklisted %}
+                            <span class="badge rounded-pill badge-rejected">Blacklisted</span>
+                        {% elif company.approval_status == 'Approved' %}
+                            <span class="badge rounded-pill badge-active">Active</span>
+                        {% elif company.approval_status == 'Pending' %}
+                            <span class="pending-badge">⏳ Pending</span>
+                        {% else %}
+                            <span class="badge rounded-pill badge-rejected">Rejected</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Action -->
+                    <td>
+                        <a href="{{ url_for('admin.companyProfile', id=company.id) }}"
+                           class="btn-view-action">View Profile</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- ── STUDENTS ── -->
+    {% if students %}
+    <div class="card section-card mb-3">
+        <div class="section-card-header d-flex align-items-center justify-content-between">
+            <span class="title">Students</span>
+            <span class="badge rounded-pill badge-closed">
+                {{ students | length }} found
+            </span>
+        </div>
+
+        <table class="admin-table table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>USN</th>
+                    <th>Branch</th>
+                    <th>CGPA</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <!-- Avatar + name -->
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="applicant-av
+                                {% if student.is_blacklisted %}applicant-av-red
+                                {% else %}applicant-av-green{% endif %}">
+                                {{ (student.name or 'NA')[:2].upper() }}
+                            </div>
+                            <div>
+                                <div class="row-name">{{ student.name }}</div>
+                                <div class="row-meta">{{ student.email }}</div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- USN -->
+                    <td class="font-monospace text-muted small">
+                        {{ student.usn }}
+                    </td>
+
+                    <!-- Branch -->
+                    <td class="small">
+                        {{ student.branch if student.branch else '—' }}
+                        {% if student.graduation_year %}
+                            <div class="row-meta">Batch {{ student.graduation_year }}</div>
+                        {% endif %}
+                    </td>
+
+                    <!-- CGPA -->
+                    <td>
+                        {% if student.cgpa %}
+                            {% if student.cgpa >= 8.0 %}
+                                <span class="badge rounded-pill cgpa-high">{{ student.cgpa }}</span>
+                            {% elif student.cgpa >= 7.0 %}
+                                <span class="badge rounded-pill cgpa-mid">{{ student.cgpa }}</span>
+                            {% else %}
+                                <span class="badge rounded-pill cgpa-low">{{ student.cgpa }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Status -->
+                    <td>
+                        {% if student.is_blacklisted %}
+                            <span class="badge rounded-pill badge-rejected">Restricted</span>
+                        {% else %}
+                            <span class="badge rounded-pill badge-active">Active</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Action -->
+                    <td>
+                        <a href="{{ url_for('admin.studentProfile', id=student.id) }}"
+                           class="btn-view-action">View Profile</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% endif %}
+
+    <!-- Back -->
+    <a href="{{ url_for('admin.dashboard') }}"
+       class="d-inline-flex align-items-center gap-1 mt-2 fw-semibold small"
+       style="color:#2e7d32;">
+        &larr; Back to Dashboard
+    </a>
+
+</div>
+{% endblock %}

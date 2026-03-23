@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% block title %}Create Placement Drive{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4" style="max-width:680px;">
+
+    <!-- Back -->
+    <a href="{{redirect_to}}"
+       class="d-inline-flex align-items-center gap-1 mb-4 text-decoration-none fw-semibold small"
+       style="color:#2e7d32;">
+        &larr; Back to {{back}}
+    </a>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            {% for category, msg in messages %}
+                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show mb-3">
+                    {{ msg }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Page heading -->
+    <div class="mb-3">
+        <div class="page-title">Create Placement Drive</div>
+        <div class="page-subtitle">
+            Fill in the details below. The drive date will be sent to admin
+            for approval before students can apply.
+        </div>
+    </div>
+
+    <!-- Company context bar -->
+    <div class="ctx-bar">
+        <div class="ctx-av">{{ (company.name or 'NA')[:2].upper() }}</div>
+        <div>
+            <div class="ctx-name">{{ company.name }}</div>
+            <div class="ctx-sub">
+                Approved company &nbsp;·&nbsp; Drive will be posted under this account
+            </div>
+        </div>
+    </div>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <!-- Basic Information -->
+        <div class="card section-card mb-3">
+            <div class="section-card-header">
+                <span class="title">Basic Information</span>
+            </div>
+            <div class="p-4">
+
+                <!-- Job Title -->
+                <div class="mb-3">
+                    {{ form.jobTitle.label(class="drive-form-label") }}
+                    {{ form.jobTitle(class="drive-form-input") }}
+                    <div class="drive-form-hint">The role students will be applying for</div>
+                    {% for error in form.jobTitle.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Salary Package -->
+                <div class="mb-3">
+                    {{ form.salaryPackage.label(class="drive-form-label") }}
+                    {{ form.salaryPackage(class="drive-form-input") }}
+                    <div class="drive-form-hint">Leave blank if not disclosed</div>
+                    {% for error in form.salaryPackage.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Job Description -->
+                <div class="mb-3">
+                    {{ form.jobDescription.label(class="drive-form-label") }}
+                    {{ form.jobDescription(class="drive-form-input", rows=4) }}
+                    {% for error in form.jobDescription.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Min CGPA -->
+                <div class="mb-0">
+                    {{ form.minCgpa.label(class="drive-form-label") }}
+                    {{ form.minCgpa(class="drive-form-input") }}
+                    <div class="drive-form-hint">
+                        7.5, 8
+                    </div>
+                    {% for error in form.minCgpa.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Eligible Branches -->
+                <div class="mb-0">
+                    {{ form.eligibleBranch.label(class="drive-form-label") }}
+                    {{ form.eligibleBranch(class="drive-form-input") }}
+                    <div class="drive-form-hint">
+                        CSE, ISE, AIML
+                    </div>
+                    {% for error in form.eligibleBranch.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Eligible Batch -->
+                <div class="mb-0">
+                    {{ form.eligibleBatch.label(class="drive-form-label") }}
+                    {{ form.eligibleBatch(class="drive-form-input") }}
+                    <div class="drive-form-hint">
+                        2027, 2028
+                    </div>
+                    {% for error in form.eligibleBatch.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Eligibility Criteria -->
+                <div class="mb-0">
+                    {{ form.eligibilityCriteria.label(class="drive-form-label") }}
+                    {{ form.eligibilityCriteria(class="drive-form-input") }}
+                    <div class="drive-form-hint">
+                        Branches, CGPA cutoff, batch year
+                    </div>
+                    {% for error in form.eligibilityCriteria.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Drive Dates -->
+        <div class="card section-card mb-3">
+            <div class="section-card-header">
+                <span class="title">Drive Dates</span>
+            </div>
+            <div class="p-4">
+
+                <div class="row g-3 mb-0">
+                    <div class="col-md-6">
+                        {{ form.appDeadline.label(class="drive-form-label") }}
+                        {{ form.appDeadline(class="drive-form-input") }}
+                        <div class="drive-form-hint">Last date for students to apply</div>
+                        {% for error in form.appDeadline.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.driveDate.label(class="drive-form-label") }}
+                        {{ form.driveDate(class="drive-form-input") }}
+                        <div class="drive-form-hint">Proposed interview / test date</div>
+                        {% for error in form.driveDate.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="drive-warn-box">
+                    ⚠ The drive date is a <strong>proposal</strong> — it must be approved
+                    by the placement admin before students can apply. You will be notified
+                    if the date is rejected and asked to propose a new one.
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="card section-card">
+            <div class="p-4">
+                {{ form.submit(class="drive-submit-btn", value="Submit Drive for Admin Approval →") }}
+                <a href="{{ url_for('company.dashboard') }}" class="drive-cancel-link">
+                    Cancel — go back to dashboard
+                </a>
+            </div>
+            <div class="section-note">
+                ℹ Once submitted, admin will review the drive date. Students can only
+                apply after approval. You can view the drive status on your dashboard.
+            </div>
+        </div>
+
+    </form>
+
+</div>
+{% endblock %}

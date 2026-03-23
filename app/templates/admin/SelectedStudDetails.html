@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Recruited Students — {{ role_name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:860px;">
+
+    <!-- Back -->
+    <a href="{{ link }}"
+       class="d-inline-flex align-items-center gap-1 mb-4 text-decoration-none fw-semibold small"
+       style="color:#2e7d32;">
+        ← Back to {{back}}
+    </a>
+
+    <!-- Header -->
+    <div class="recruited-header p-4 mb-4 d-flex align-items-center gap-3">
+        <div class="company-icon">🏢</div>
+        <div>
+            <div class="company-name">{{ company_name }}</div>
+            <div class="role-text">
+                Role: <span class="role-highlight">{{ role_name }}</span>
+                &nbsp;·&nbsp;
+                {{ students | length }} student{{ 's' if students | length != 1 else '' }} selected
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card section-card">
+        <div class="section-card-header">
+            <span class="title">✅ Selected Students</span>
+        </div>
+        <table class="admin-table table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>USN</th>
+                    <th>Branch</th>
+                    <th>CGPA</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in students %}
+                <tr>
+                    <td class="font-monospace text-muted small">{{ '%02d' % loop.index }}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="av-initials av-green"
+                                 style="width:32px;height:32px;font-size:0.68rem;">
+                                {{ app.student.name[:2].upper() }}
+                            </div>
+                            <span class="row-name">{{ app.student.name }}</span>
+                        </div>
+                    </td>
+                    <td class="font-monospace text-muted small">{{ app.student.usn }}</td>
+                    <td>{{ app.student.branch }}</td>
+                    <td>
+                        <span class="badge rounded-pill
+                            {% if app.student.cgpa >= 8.5 %}cgpa-high
+                            {% elif app.student.cgpa >= 7.0 %}cgpa-mid
+                            {% else %}cgpa-low{% endif %}">
+                            {{ app.student.cgpa }}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-muted text-center py-4">
+                        No students selected for this drive.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

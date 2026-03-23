@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% block title %}My Applications{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}{% for category, msg in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show mb-3">
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}{% endif %}
+    {% endwith %}
+
+    <!-- Topbar -->
+    <div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-3">
+        <div>
+            <div class="page-title">My Applications</div>
+            <div class="page-subtitle">
+                Track all your placement drive applications
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('student.applications', filter='all') }}"
+               class="filter-pill {% if active_filter == 'all' %}active{% endif %}">All</a>
+            <a href="{{ url_for('student.applications', filter='applied') }}"
+               class="filter-pill {% if active_filter == 'applied' %}active{% endif %}">In Progress</a>
+            <a href="{{ url_for('student.applications', filter='selected') }}"
+               class="filter-pill {% if active_filter == 'selected' %}active{% endif %}">Selected</a>
+            <a href="{{ url_for('student.applications', filter='rejected') }}"
+               class="filter-pill {% if active_filter == 'rejected' %}active{% endif %}">Not Selected</a>
+            <a href="{{ url_for('student.applications', filter='cancelled') }}"
+               class="filter-pill {% if active_filter == 'cancelled' %}active{% endif %}">Cancelled</a>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md">
+            <div class="stat-mini stat-mini-green">
+                <div class="stat-mini-num" style="color:#1a3d1a;">{{ total_count }}</div>
+                <div class="stat-mini-label">Total</div>
+            </div>
+        </div>
+        <div class="col-6 col-md">
+            <div class="stat-mini stat-mini-blue" style="border-top:3px solid #1565c0;">
+                <div class="stat-mini-num" style="color:#185fa5;">{{ applied_count }}</div>
+                <div class="stat-mini-label">In Progress</div>
+            </div>
+        </div>
+        <div class="col-6 col-md">
+            <div class="stat-mini stat-mini-teal">
+                <div class="stat-mini-num" style="color:#3b6d11;">{{ selected_count }}</div>
+                <div class="stat-mini-label">Selected</div>
+            </div>
+        </div>
+        <div class="col-6 col-md">
+            <div class="stat-mini stat-mini-amber">
+                <div class="stat-mini-num" style="color:#a32d2d;">{{ rejected_count }}</div>
+                <div class="stat-mini-label">Not Selected</div>
+            </div>
+        </div>
+        <div class="col-6 col-md">
+            <div class="stat-mini" style="border-top:3px solid #546e54;">
+                <div class="stat-mini-num" style="color:#546e54;">{{ cancelled_count }}</div>
+                <div class="stat-mini-label">Cancelled</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Applications Table -->
+    <div class="card section-card">
+        <div class="section-card-header d-flex align-items-center justify-content-between">
+            <span class="title">Application List</span>
+            <span class="badge rounded-pill badge-closed">
+                {{ apps.first or 0 }}–{{ apps.last or 0 }} of {{ apps.total }}
+            </span>
+        </div>
+
+        <table class="admin-table table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Company & Role</th>
+                    <th>Package</th>
+                    <th>App Deadline</th>
+                    <th>Drive Date</th>
+                    <th>Applied On</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in apps.items %}
+                <tr>
+                    <td class="font-monospace text-muted small">
+                        {{ '%03d' % app.id }}
+                    </td>
+
+                    <!-- Company & Role -->
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="stud-drive-card-av">
+                                {{ (app.drive.company.name or 'NA')[:2].upper() }}
+                            </div>
+                            <div>
+                                <div class="row-name">{{ app.drive.company.name }}</div>
+                                <div class="row-meta">{{ app.drive.job_title }}</div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- Package -->
+                    <td>
+                        {% if app.drive.salary_package %}
+                            <span class="small" style="color:#00796b;font-weight:600;">
+                                {{ app.drive.salary_package }} LPA
+                            </span>
+                        {% else %}
+                            <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- App Deadline -->
+                    <td>
+                        <div class="font-monospace text-muted small">
+                            {{ app.drive.application_deadline.strftime('%d %b %Y') }}
+                        </div>
+                        {% set dl_days = (app.drive.application_deadline - now.date()).days %}
+                        {% if dl_days < 0 %}
+                            <div class="row-meta" style="color:#5f5e5a;">Closed</div>
+                        {% elif dl_days <= 3 %}
+                            <span class="badge rounded-pill dl-warn">⚠ {{ dl_days }}d left</span>
+                        {% else %}
+                            <span class="badge rounded-pill dl-safe">{{ dl_days }}d left</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Drive Date -->
+                    <td>
+                        <div class="font-monospace text-muted small">
+                            {{ app.drive.drive_date.strftime('%d %b %Y') }}
+                        </div>
+                        {% if app.drive.approval_status == 'Closed' %}
+                            <div class="row-meta">Ended</div>
+                        {% elif app.drive.approval_status == 'Approved' %}
+                            {% set dd_days = (app.drive.drive_date - now.date()).days %}
+                            {% if dd_days >= 0 %}
+                                <div class="row-meta" style="color:#3b6d11;">
+                                    {{ dd_days }}d away
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+
+                    <!-- Applied On -->
+                    <td class="font-monospace text-muted small">
+                        {{ app.created_at.strftime('%d %b %Y') }}
+                    </td>
+
+                    <!-- Status -->
+                    <td>
+                        {% if app.status == 'Applied' %}
+                            <span class="badge rounded-pill badge-applied">In Progress</span>
+                        {% elif app.status == 'Selected' %}
+                            <span class="badge rounded-pill badge-selected">Selected ✓</span>
+                            <div class="row-meta mt-1" style="color:#2e7d32;font-size:10px;">
+                                Check college email
+                            </div>
+                        {% elif app.status == 'Rejected' %}
+                            <span class="badge rounded-pill badge-rejected">Not Selected</span>
+                        {% else %}
+                            <span class="badge rounded-pill badge-cancelled">Cancelled</span>
+                        {% endif %}
+                    </td>
+
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-muted text-center py-5">
+                        <div style="font-size:1.5rem;margin-bottom:8px;">📋</div>
+                        No applications yet.
+                        <a href="{{ url_for('student.drives') }}"
+                           style="color:#2e7d32;font-weight:600;">Browse open drives →</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if selected_count > 0 %}
+        <div class="section-note" style="background:#eaf3de;border-left-color:#2e7d32;color:#2e7d32;">
+            🎉 Congratulations! You have been selected. Check your college email for the offer letter.
+        </div>
+        {% else %}
+        <div class="section-note">
+            ℹ Application outcomes are decided by the company after the drive date. Keep checking back for updates.
+        </div>
+        {% endif %}
+
+        <!-- Pagination -->
+        <div class="d-flex align-items-center justify-content-between px-3 py-3 flex-wrap gap-2">
+            <span class="text-muted small">
+                Page {{ apps.page }} of {{ apps.pages }}
+            </span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item {% if not apps.has_prev %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ url_for('student.applications', filter=active_filter, page=apps.prev_num) }}">
+                            Previous
+                        </a>
+                    </li>
+                    {% for p in apps.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if p %}
+                            <li class="page-item {% if p == apps.page %}active{% endif %}">
+                                <a class="page-link"
+                                   href="{{ url_for('student.applications', filter=active_filter, page=p) }}">
+                                    {{ p }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if not apps.has_next %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ url_for('student.applications', filter=active_filter, page=apps.next_num) }}">
+                            Next
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

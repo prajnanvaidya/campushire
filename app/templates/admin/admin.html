@@ -1,0 +1,369 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="admin-page container-fluid px-4 py-4">
+
+    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=True) %}
+                        {% if messages %}
+                            {% for category, msg in messages %}
+                                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show mx-4 mt-3" role="alert">
+                                    {{ msg }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+    <!-- Page Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h4 class="fw-bold mb-1" style="color:#1a3d1a;">Admin Dashboard</h4>
+            <p class="text-muted small mb-0">
+                Welcome back, Admin — here's what's happening on CampusHire today.
+            </p>
+        </div>
+        <span class="date-badge">📅 {{ now.strftime('%a, %d %b %Y') }}</span>
+    </div>
+
+
+    <!-- ── Stat Cards ── -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card stat-card-green h-100 p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span style="font-size:1.6rem;">🏢</span>
+                    <span class="stat-num font-monospace">{{ reg_company }}</span>
+                </div>
+                <p class="text-uppercase fw-bold small text-muted mb-2"
+                   style="letter-spacing:.5px;">Companies</p>
+                <div class="d-flex flex-wrap gap-1">
+                    <span class="badge rounded-pill badge-active">{{ reg_company }} Active</span>
+                    <span class="badge rounded-pill badge-pending">{{ pending_company_count }} Pending</span>
+                    <span class="badge rounded-pill badge-rejected">{{ rejected_companies }} Removed</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card stat-card-teal h-100 p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span style="font-size:1.6rem;">🎓</span>
+                    <span class="stat-num font-monospace">{{ reg_stud }}</span>
+                </div>
+                <p class="text-uppercase fw-bold small text-muted mb-2"
+                   style="letter-spacing:.5px;">Students</p>
+                <div class="d-flex flex-wrap gap-1">
+                    <span class="badge rounded-pill badge-active">{{ new_stud }} This Week</span>
+                    <span class="badge rounded-pill badge-rejected">{{ removed_stud }} Restricted</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card stat-card-amber h-100 p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span style="font-size:1.6rem;">📋</span>
+                    <span class="stat-num font-monospace">{{ current_drives }}</span>
+                </div>
+                <p class="text-uppercase fw-bold small text-muted mb-2"
+                   style="letter-spacing:.5px;">Drives</p>
+                <div class="d-flex flex-wrap gap-1">
+                    <span class="badge rounded-pill badge-active">{{ current_drives }} Live</span>
+                    <span class="badge rounded-pill badge-pending">{{ closing_drives }} Closing</span>
+                    <span class="badge rounded-pill badge-closed">{{ completed_drives }} Ended</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card stat-card-red h-100 p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">  
+                    <span style="font-size:1.6rem;">📨</span>
+                    <span class="stat-num font-monospace">{{ reg_students }}</span>
+                </div>
+                <p class="text-uppercase fw-bold small text-muted mb-2"
+                   style="letter-spacing:.5px;">Applications</p>
+                <div class="d-flex flex-wrap gap-1">
+                    <span class="badge rounded-pill badge-applied">{{ inprogress_students }} In Progress</span>
+                    <span class="badge rounded-pill badge-selected">{{ selected_students }} Placed</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── Companies + Students ── -->
+    <div class="row g-3 mb-3">
+
+        <!-- Companies -->
+        <div class="col-lg-6">
+            <div class="card section-card h-100">
+                <div class="section-card-header d-flex align-items-center justify-content-between">
+                    <span class="title">🏢 Recent Companies</span>
+                    <span class="badge rounded-pill badge-active">{{ approved_comp }} Active</span>
+                </div>
+                <div>
+                    {% for company in companies %}
+                    <div class="admin-list-row d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="av-initials {% if company.approval_status == 'Rejected' %}av-red{% else %}av-green{% endif %}">
+                                {{ company.name[:2].upper() }}
+                            </div>
+                            <div>
+                                <div class="row-name">{{ company.name }}</div>
+                                <div class="row-meta">
+                                    Joined {{ (now - company.created_at).days }} days ago
+                                    &nbsp;·&nbsp;
+                                    {{ ac_drives.get(company.id, 0) }} active drive{{ 's' if ac_drives.get(company.id,0) != 1 else '' }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            {% if company.approval_status == "Approved" %}
+                                <span class="badge rounded-pill badge-active">Active</span>
+                                <a href="{{ url_for('admin.CompBlock', id=company.id) }}"
+                                   class="btn btn-restrict">Blacklist</a>
+                            {% elif company.approval_status == "Rejected" %}
+                                <span class="badge rounded-pill badge-rejected">Removed</span>
+                            {% elif company.approval_status == "Pending" %}
+                                <span class="badge rounded-pill badge-pending">Pending</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-4 mb-0">No companies registered yet.</p>
+                    {% endfor %}
+                </div>
+                <div class="section-note">
+                    ℹ Blacklisting cancels all drives and student applications for that company.
+                </div>
+            </div>
+        </div>
+
+        <!-- Students -->
+        <div class="col-lg-6">
+            <div class="card section-card h-100">
+                <div class="section-card-header d-flex align-items-center justify-content-between">
+                    <span class="title">🎓 Recent joined Students</span>
+                    <span class="badge rounded-pill badge-active">{{ reg_stud }} Total</span>
+                </div>
+                <div>
+                    {% for student in students %}
+                    <div class="admin-list-row d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="av-initials {% if student.is_blacklisted %}av-red{% else %}av-teal{% endif %}">
+                                {{ student.name[:2].upper() }}
+                            </div>
+                            <div>
+                                <div class="row-name">{{ student.name }}</div>
+                                <div class="row-meta">
+                                    {{ student.branch }} &nbsp;·&nbsp;
+                                    CGPA {{ student.cgpa }} &nbsp;·&nbsp;
+                                    Batch {{ student.graduation_year }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            {% if not student.is_blacklisted %}
+                                <a href="{{ url_for('admin.StudBlock', id=student.id) }}"
+                                   class="btn btn-restrict">Restrict</a>
+                            {% else %}
+                                <span class="badge rounded-pill badge-rejected">Restricted</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-4 mb-0">No students registered yet.</p>
+                    {% endfor %}
+                </div>
+                <div class="section-note">
+                    ℹ Restricting a student withdraws all open applications and blocks future access.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── Approvals + Drives ── -->
+    <div class="row g-3 mb-3">
+
+        <!-- Approval Requests -->
+        <div class="col-lg-5">
+            <div class="card section-card h-100">
+                <div class="section-card-header d-flex align-items-center justify-content-between">
+                    <span class="title">⏳ Pending Approvals</span>
+                    <span class="badge rounded-pill badge-pending">{{ pending_company_count }} Pending</span>
+                </div>
+                <div>
+                    {% for company in company_pending %}
+                    <div class="admin-list-row d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="av-initials av-amber">
+                                {{ company.name[:2].upper() }}
+                            </div>
+                            <div>
+                                <div class="row-name">{{ company.name }}</div>
+                                <div class="row-meta">
+                                    Requested {{ (now - company.created_at).days }} days ago
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('admin.companyAction', action='Approve', id=company.id) }}"
+                               class="btn btn-approve-action">Approve</a>
+                            <a href="{{ url_for('admin.companyAction', action='Reject', id=company.id) }}"
+                               class="btn btn-decline-action">Decline</a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-4 mb-0">No pending approvals.</p>
+                    {% endfor %}
+                </div>
+                <div class="section-note">
+                    ℹ Only approved companies can post placement drives.
+                </div>
+            </div>
+        </div>
+
+        <!-- Drives -->
+        <div class="col-lg-7">
+            <div class="card section-card h-100">
+                <div class="section-card-header d-flex align-items-center justify-content-between">
+                    <span class="title">📋 Placement Drives</span>
+                    <div class="d-flex gap-1">
+                        <span class="badge rounded-pill badge-active">{{ current_drives }} Live</span>
+                        <span class="badge rounded-pill badge-closed">{{ completed_drives }} Ended</span>
+                    </div>
+                </div>
+                <table class="admin-table table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Role / Company</th>
+                            <th>Drive Date</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for drive in drives %}
+                        <tr>
+                            <td>
+                                <div class="row-name">{{ drive.job_title }}</div>
+                                <div class="row-meta">{{ drive.company.name }}</div>
+                            </td>
+                            <td>
+                                {% if drive.approval_status == "Approved" or drive.approval_status == "Pending" %}
+                                    {% set days = (drive.drive_date - now.date()).days %}
+                                    {% if days <= 0 %}
+                                        <span class="badge rounded-pill dl-over">Today</span>
+                                    {% elif days <= 3 %}
+                                        <span class="badge rounded-pill dl-warn">⚠ {{ days }} days left</span>
+                                    {% else %}
+                                        <span class="badge rounded-pill dl-safe">{{ days }} days away</span>
+                                    {% endif %}
+                                {% elif drive.approval_status == "Closed" %}
+                                    <span class="text-muted small">{{ drive.drive_date }}</span>
+                                {% else %}
+                                    <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if drive.approval_status == "Approved" %}
+                                    <span class="badge rounded-pill badge-active">Live</span>
+                                {% elif drive.approval_status == "Closed" %}
+                                    <span class="badge rounded-pill badge-closed">Ended</span>
+                                {% elif drive.approval_status == "Pending" %}
+                                    <span class="badge rounded-pill badge-pending">Under Review</span>
+                                {% else %}
+                                    <span class="badge rounded-pill badge-rejected">Cancelled</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if drive.approval_status == "Closed" %}
+                                    <a href="{{ url_for('admin.recruitedDetails', id=drive.id) }}"
+                                       class="btn btn-view-action">Recruited</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-muted text-center py-4">No drives found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── Applications ── -->
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="card section-card">
+                <div class="section-card-header d-flex align-items-center justify-content-between">
+                    <span class="title">📨 Recent Student Applications</span>
+                    <div class="d-flex gap-1 flex-wrap">
+                        <span class="badge rounded-pill badge-applied">{{ inprogress_students }} In Progress</span>
+                        <span class="badge rounded-pill badge-selected">{{ selected_students }} Placed</span>
+                    </div>
+                </div>
+                <table class="admin-table table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Student</th>
+                            <th>Company</th>
+                            <th>Applied On</th>
+                            <th>Outcome</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for application in applications %}
+                        <tr>
+                            <td class="font-monospace text-muted small">{{ '%03d' % loop.index }}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="av-initials {% if application.student.is_blacklisted %}av-red{% else %}av-teal{% endif %}"
+                                         style="width:30px;height:30px;font-size:0.66rem;border-radius:7px;">
+                                        {{ application.student.name[:2].upper() }}
+                                    </div>
+                                    <span class="row-name">{{ application.student.name }}</span>
+                                </div>
+                            </td>
+                            <td>{{ application.drive.company.name }}</td>
+                            <td class="font-monospace text-muted small">
+                                {{ application.created_at.strftime('%d %b %Y') }}
+                            </td>
+                            <td>
+                                {% if application.student.is_blacklisted %}
+                                    <span class="badge rounded-pill badge-rejected">Restricted</span>
+                                {% elif application.status == "Applied" %}
+                                    <span class="badge rounded-pill badge-applied">In Progress</span>
+                                {% elif application.status == "Selected" %}
+                                    <span class="badge rounded-pill badge-selected">Placed ✓</span>
+                                {% elif application.status == "Rejected" %}
+                                    <span class="badge rounded-pill badge-rejected">Not Selected</span>
+                                {% elif application.status == "Cancelled" %}
+                                    <span class="badge rounded-pill badge-cancelled">Withdrawn</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-muted text-center py-4">No applications yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>  
+{% endblock %}
+
+

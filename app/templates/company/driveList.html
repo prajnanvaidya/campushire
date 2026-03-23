@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+{% block title %}My Drives — {{ company.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}{% for category, msg in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show mb-3">
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}{% endif %}
+    {% endwith %}
+
+    <!-- Topbar -->
+    <div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-3">
+        <div>
+            <div class="page-title">My Drives</div>
+            <div class="page-subtitle">
+                All placement drives posted by {{ company.name }}
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{{ url_for('company.drives', filter='all') }}"
+               class="filter-pill {% if active_filter == 'all' %}active{% endif %}">All</a>
+            <a href="{{ url_for('company.drives', filter='live') }}"
+               class="filter-pill {% if active_filter == 'live' %}active{% endif %}">Live</a>
+            <a href="{{ url_for('company.drives', filter='pending') }}"
+               class="filter-pill {% if active_filter == 'pending' %}active{% endif %}">Pending</a>
+            <a href="{{ url_for('company.drives', filter='ended') }}"
+               class="filter-pill {% if active_filter == 'ended' %}active{% endif %}">Ended</a>
+            <a href="{{ url_for('company.createDrive', next='driveList') }}"
+               class="btn-create-drive">+ Create Drive</a>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-mini stat-mini-green">
+                <div class="stat-mini-num" style="color:#1a3d1a;">{{ total_count }}</div>
+                <div class="stat-mini-label">Total Drives</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-mini stat-mini-teal">
+                <div class="stat-mini-num" style="color:#3b6d11;">{{ live_count }}</div>
+                <div class="stat-mini-label">Live</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-mini stat-mini-amber">
+                <div class="stat-mini-num" style="color:#854f0b;">{{ pending_count_d }}</div>
+                <div class="stat-mini-label">Pending Approval</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-mini" style="border-top:3px solid #5f5e5a;">
+                <div class="stat-mini-num" style="color:#5f5e5a;">{{ ended_count }}</div>
+                <div class="stat-mini-label">Ended</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Rejection Banners -->
+    {% for drive in rejected_date_drives %}
+    <div class="drives-rej-banner">
+        <span style="font-size:1.2rem;flex-shrink:0;">⚠</span>
+        <div>
+            <div class="drb-list-title">
+                Drive date rejected — {{ drive.job_title }}
+            </div>
+            <div class="drb-list-sub">
+                Admin rejected your proposed drive date. Propose a new one to resume.
+            </div>
+            {% if drive.date_rejection_note %}
+            <div class="drb-list-note">
+                <strong>Admin:</strong> {{ drive.date_rejection_note }}
+            </div>
+            {% endif %}
+            <a href="{{ url_for('company.proposeDate', driveId=drive.id) }}"
+               class="drb-list-btn">
+                Propose New Date →
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Drives Table -->
+    <div class="card section-card">
+        <div class="section-card-header d-flex align-items-center justify-content-between">
+            <span class="title">Drive List</span>
+            <span class="badge rounded-pill badge-closed">
+                {{ drives.first or 0 }}–{{ drives.last or 0 }} of {{ drives.total }}
+            </span>
+        </div>
+
+        <table class="admin-table table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Drive</th>
+                    <th>App Deadline</th>
+                    <th>Drive Date</th>
+                    <th>Applicants</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for drive in drives.items %}
+                <tr class="
+                    {% if drive.approval_status == 'Pending' %}tbl-pending-row
+                    {% elif drive.approval_status == 'Closed' %}tbl-closed-row
+                    {% endif %}">
+
+                    <td class="font-monospace text-muted small">
+                        {{ '%03d' % drive.id }}
+                    </td>
+
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="drive-list-av
+                                {% if drive.approval_status == 'Rejected' %}drive-av-red
+                                {% elif drive.date_rejected or drive.approval_status == 'Pending' %}drive-av-amber
+                                {% elif drive.approval_status == 'Closed' %}drive-av-teal
+                                {% else %}drive-av-green{% endif %}">
+                                {{ drive.job_title[:2].upper() }}
+                            </div>
+                            <div>
+                                <div class="row-name">{{ drive.job_title }}</div>
+                                {% if drive.salary_package %}
+                                    <div class="row-meta">{{ drive.salary_package }} LPA</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+
+                    <td class="font-monospace text-muted small">
+                        {% if drive.approval_status == 'Rejected' %}
+                            <span class="text-muted">—</span>
+                        {% else %}
+                            {{ drive.application_deadline.strftime('%d %b %Y') }}
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if drive.date_rejected %}
+                            <div class="row-name" style="font-size:0.8rem;color:#854f0b;">
+                                {{ drive.drive_date.strftime('%d %b %Y') }}
+                            </div>
+                            <div class="row-meta">Date rejected</div>
+
+                        {% elif drive.approval_status == 'Approved' %}
+                            {% set days = (drive.drive_date - now.date()).days %}
+                            {% if days <= 0 %}
+                                <span class="badge rounded-pill dl-over">Today</span>
+                            {% elif days <= 7 %}
+                                <span class="badge rounded-pill dl-warn">⚠ {{ days }}d left</span>
+                            {% else %}
+                                <span class="badge rounded-pill dl-safe">{{ days }}d away</span>
+                            {% endif %}
+
+                        {% elif drive.approval_status == 'Pending' %}
+                            <div class="row-name" style="font-size:0.8rem;color:#854f0b;">
+                                {{ drive.drive_date.strftime('%d %b %Y') }}
+                            </div>
+                            <div class="row-meta">Tentative — awaiting admin</div>
+
+                        {% elif drive.approval_status == 'Closed' %}
+                            <span class="font-monospace text-muted small">
+                                {{ drive.drive_date.strftime('%d %b %Y') }}
+                            </span>
+
+                        {% else %}
+                            <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% set count = drive_app.get(drive.id, 0) %}
+                        {% if drive.approval_status == 'Rejected' %}
+                            <span class="text-muted small">—</span>
+                        {% elif count > 0 %}
+                            <span class="badge rounded-pill badge-applied">
+                                {{ count }} applied
+                            </span>
+                        {% else %}
+                            <span class="badge rounded-pill badge-closed">0 applied</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if drive.date_rejected %}
+                            <span class="rescheduling-badge">↩ Rescheduling</span>
+                        {% elif drive.approval_status == 'Pending' %}
+                            <span class="pending-badge">⏳ Awaiting Approval</span>
+                        {% elif drive.approval_status == 'Approved' %}
+                            <span class="badge rounded-pill badge-active">Live</span>
+                        {% elif drive.approval_status == 'Closed' %}
+                            <span class="badge rounded-pill badge-closed">Ended</span>
+                        {% elif drive.approval_status == 'Rejected' %}
+                            <span class="badge rounded-pill badge-rejected">Cancelled</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if drive.date_rejected %}
+                            <a href="{{ url_for('company.proposeDate', driveId=drive.id, next='driveList') }}"
+                               class="btn-approve-action">Update Date</a>
+
+                        {% elif drive.approval_status == 'Approved' %}
+                            <a href="{{ url_for('company.driveProfile', driveId=drive.id, next='driveList') }}"
+                               class="btn-view-action">View</a>
+
+                        {% elif drive.approval_status == 'Pending' %}
+                            <span class="waiting-text">Waiting for admin</span>
+
+                        {% elif drive.approval_status == 'Closed' %}
+                            <a href="{{ url_for('company.recruitedDetails', driveId=drive.id, next='driveList') }}"
+                               class="btn-view-action">Results</a>
+
+                        {% elif drive.approval_status == 'Rejected' %}
+                            <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-muted text-center py-4">
+                        No drives found for this filter.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="section-note">
+            ℹ Drive dates need admin approval before students can apply.
+            Rescheduling drives are hidden from students.
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex align-items-center justify-content-between px-3 py-3 flex-wrap gap-2">
+            <span class="text-muted small">
+                Page {{ drives.page }} of {{ drives.pages }}
+            </span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item {% if not drives.has_prev %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ url_for('company.drives', filter=active_filter, page=drives.prev_num) }}">
+                            Previous
+                        </a>
+                    </li>
+                    {% for p in drives.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if p %}
+                            <li class="page-item {% if p == drives.page %}active{% endif %}">
+                                <a class="page-link"
+                                   href="{{ url_for('company.drives', filter=active_filter, page=p) }}">
+                                    {{ p }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if not drives.has_next %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ url_for('company.drives', filter=active_filter, page=drives.next_num) }}">
+                            Next
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

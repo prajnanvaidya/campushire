@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}Home | CampusHire{% endblock %}
+
+{% block content %}
+
+<!--Hero-Section-->
+<section id="hero" class="hero_sec d-flex align-items-center text-center justify-content-center">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="container">
+                    <!-- Flash Messages -->
+    <div class="flash-wrapper">
+        {% with messages = get_flashed_messages(with_categories=True) %}
+            {% if messages %}
+                {% for category, msg in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show flash-alert" role="alert">
+                        {{ msg }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+                <h1 class="display-5 fw-bold text-white">Welcome to CampusHire</h1>
+                <p class="lead text-white mt-3"> A trusted platform for managing university placement drives. CampusHire simplifies communication between students, companies, and placement cells during the hectic recruitment season.</p>
+                <a href="{{url_for('auth.register')}}" class="btn btn-success btn-lg mt-3">Get Started</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!--About-Section-->
+<section id="about" class="about py-5 bg-light">
+    <div class="container text-center">
+        <h2 class="mb-4">About CampusHire</h2>
+        <p class="text-muted">CampusHire is a placement management platform designed for universities to streamline the recruitment process. It enables companies to create placement drives, students to apply for opportunities, and administrators to manage and monitor the entire placement cycle.</p>
+
+        <div class="row mt-4 g-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                <i class="bi bi-mortarboard-fill text-success fs-1 mb-3"></i>
+                <h5 class="text-success">For Students</h5>
+                <p class="text-muted">Discover placement drives, apply to companies, and track your application status easily.</p>
+                </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                <i class="bi bi-building text-success fs-1 mb-3"></i>
+                <h5 class="text-success">For Companies</h5>
+                <p class="text-muted">Post placement drives, review student applications, and shortlist candidates efficiently.
+                </p>
+                </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                <i class="bi bi-person-gear text-success fs-1 mb-3"></i>
+                <h5 class="text-success">For Admin</h5>
+                <p class="text-muted">Manage companies, approve drives, and monitor placement statistics from a centralized dashboard.</p>
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+
+<!-- Call-to-Action -->
+<section class="call_action py-5 text-center">
+    <div class="container">
+        <h2>Ready to begin your placement journey?</h2>
+        <p class="text-muted mt-2">Join CampusHire today and make placement management simpler for students, companies, and universities.</p>
+        <a href="{{url_for('auth.register')}}" class="btn btn-success btn-lg mt-3">Create Account</a>
+    </div>
+</section>
+
+
+
+<!--Contact-Section-->
+<section id="contact" class="contact py-5">
+    <div class="container">
+        <div class="row align-items-center justify-content-center gx-5">
+
+            <!-- Left Image -->
+            <div class="col-lg-4 col-md-5">
+                <div class="contact-img position-relative rounded overflow-hidden">
+                    <img src="{{url_for('static', filename='images/contact.jpg')}}"
+                         alt="Contact Support"
+                         class="img-fluid w-100 h-100 object-fit-cover rounded">
+                    <!-- Overlay -->
+                    <div class="contact-img-overlay position-absolute top-0 start-0 w-100 h-100 rounded"></div>
+                </div>
+            </div>
+
+            <!-- Right Form -->
+            <div class="col-lg-6 col-md-7">
+                <div class="form-wrapper">
+
+                    <h2 class="mb-3">Contact Us</h2>
+
+                    <p class="text-muted mb-4">
+                        If you have any queries regarding CampusHire, feel free to reach out to us.
+                    </p>
+
+                    <form method="POST" action="{{url_for('home.contact')}}">
+                        <div class="mb-3">
+                            <input type="email"
+                                   name="email"
+                                   class="form-control"
+                                   placeholder="Your Email"
+                                   required>
+                        </div>
+
+                        <div class="mb-3">
+                            <textarea name="message"
+                                      class="form-control"
+                                      rows="5"
+                                      placeholder="Your Message"
+                                      required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-success">
+                            Send Message
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+{% endblock %}

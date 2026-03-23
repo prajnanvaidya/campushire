@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}{% for category, msg in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show mb-3">
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}{% endif %}
+    {% endwith %}
+
+    <!-- Greeting -->
+    <div class="mb-4">
+        <div class="page-title">
+            Welcome back, <span style="color:#2e7d32;">{{ stud_name }}</span>
+        </div>
+        <div class="page-subtitle">
+            {{ now.strftime('%a, %d %b %Y') }}
+            &nbsp;·&nbsp;
+            {{ stud_branch if stud_branch else '' }}
+            {% if stud_grad_year %}&nbsp;·&nbsp; {{ stud_grad_year }} Batch{% endif %}
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-mini stat-mini-green">
+                <div class="stat-mini-num" style="color:#1a3d1a;">
+                    {{ applied_app_count }}
+                </div>
+                <div class="stat-mini-label">Applications</div>
+                <div class="row-meta mt-1">Total submitted</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-mini stat-mini-teal">
+                <div class="stat-mini-num" style="color:#3b6d11;">
+                    {{ approved_drives_count }}
+                </div>
+                <div class="stat-mini-label">Open Drives</div>
+                <div class="row-meta mt-1">Don't miss the chance</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-mini stat-mini-amber">
+                <div class="stat-mini-num" style="color:#854f0b;">
+                    {{ closing_week_drives_count }}
+                </div>
+                <div class="stat-mini-label">Closing This Week</div>
+                <div class="row-meta mt-1">Apply before it ends</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-mini {{ 'stat-mini-green' if placed else 'stat-mini-amber' }}">
+                {% if placed %}
+                    <div class="stat-mini-num" style="color:#2e7d32;font-size:0.9rem;">
+                        Placed ✓
+                    </div>
+                    <div class="stat-mini-label">{{ company_name }}</div>
+                    <div class="row-meta mt-1">{{ salary }} </div>
+                {% else %}
+                    <div class="stat-mini-num" style="color:#e65100;font-size:0.9rem;">
+                        Not Placed
+                    </div>
+                    <div class="stat-mini-label">Placement Status</div>
+                    <div class="row-meta mt-1">Keep applying</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Two column layout -->
+    <div class="row g-3">
+
+        <!-- Left column -->
+        <div class="col-lg-8">
+
+            <!-- My Recent Applications -->
+            <div class="card section-card mb-3">
+                <div class="section-card-header d-flex align-items-center justify-content-between">
+                    <span class="title">My Applications</span>
+                    <a href="{{ url_for('student.applications') }}"
+                       class="btn-view-action">View All →</a>
+                </div>
+
+                {% for application in recent_applications %}
+                <a href="#"
+                   class="stud-app-row d-flex align-items-center gap-3">
+                    <div class="stud-app-av stud-av-g">
+                        {{ (application.drive.company.name or 'NA')[:2].upper() }}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="row-name">
+                            {{ application.drive.company.name }}
+                        </div>
+                        <div class="row-meta">
+                            {{ application.drive.job_title }}
+                            &nbsp;·&nbsp;
+                            {{ application.drive.application_deadline.strftime('%d %b') }}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        {% if application.status == 'Applied' %}
+                            <span class="badge rounded-pill badge-applied">Applied</span>
+                        {% elif application.status == 'Selected' %}
+                            <span class="badge rounded-pill badge-selected">Selected ✓</span>
+                        {% elif application.status == 'Rejected' %}
+                            <span class="badge rounded-pill badge-rejected">Rejected</span>
+                        {% else %}
+                            <span class="badge rounded-pill badge-cancelled">Cancelled</span>
+                        {% endif %}
+                        {% if application.drive.salary_package %}
+                            <div class="row-meta mt-1">
+                                {{ application.drive.salary_package }} 
+                            </div>
+                        {% endif %}
+                    </div>
+                </a>
+                {% else %}
+                <div class="p-4 text-muted text-center small">
+                    No applications yet. Browse open drives and apply!
+                </div>
+                {% endfor %}
+
+                {% if placed %}
+                <div class="section-note">
+                    🎉 You have been selected at {{ company_name }} —
+                    check your college email for the offer letter.
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Drives Closing This Week -->
+            <div class="card section-card">
+                <div class="section-card-header d-flex align-items-center justify-content-between">
+                    <span class="title">Drives Closing This Week</span>
+                    <a href="{{ url_for('student.drives') }}"
+                       class="btn-view-action">Browse all →</a>
+                </div>
+
+                {% for drive in closing_drives %}
+                <div class="stud-drive-row">
+                    <div class="stud-app-av stud-av-a">
+                        {{ (drive.company.name or 'NA')[:2].upper() }}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="row-name">{{ drive.job_title }}</div>
+                        <div class="row-meta">{{ drive.company.name }}</div>
+                    </div>
+                    <div class="d-flex flex-column align-items-end gap-1">
+                        {% set days = (drive.application_deadline - now.date()).days %}
+                        {% if days <= 3 %}
+                            <span class="badge rounded-pill dl-warn">
+                                {{ drive.application_deadline.strftime('%d %b') }} — {{ days }}d left
+                            </span>
+                        {% else %}
+                            <span class="badge rounded-pill dl-safe">
+                                {{ drive.application_deadline.strftime('%d %b') }} — {{ days }}d left
+                            </span>
+                        {% endif %}
+                        {% if drive.salary_package %}
+                            <span class="small" style="color:#00796b;font-weight:600;">
+                                {{ drive.salary_package }} 
+                            </span>
+                        {% endif %}
+                        {% if drive.id in applied_drive_ids %}
+                            <span class="badge rounded-pill badge-applied">Applied ✓</span>
+                        {% else %}
+                            <form method="POST" action="{{ url_for('student.apply', driveId=drive.id) }}"
+                                style="display:inline;">
+                                <button type="submit" class="stud-apply-btn">Apply</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="p-4 text-muted text-center small">
+                    No drives closing this week. Check back soon!
+                </div>
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+        <!-- Right column -->
+        <div class="col-lg-4">
+
+            <!-- Academic Standing -->
+            <div class="card section-card mb-3">
+                <div class="section-card-header">   
+                    <span class="title">Academic Standing</span>
+                </div>
+                <div class="p-4 text-center">
+
+                    <!-- CGPA Ring -->
+                    <div class="cgpa-ring-wrap">
+                        {% if stud_cgpa %}
+                            {% set pct = (stud_cgpa / 10 * 301.6) %}
+                            {% set offset = 301.6 - pct %}
+                        {% else %}
+                            {% set offset = 301.6 %}
+                        {% endif %}
+                        <svg width="120" height="120" viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="48" fill="none"
+                                    stroke="#e8f5e9" stroke-width="10"/>
+                            <circle cx="60" cy="60" r="48" fill="none"
+                                    stroke="#2e7d32" stroke-width="10"
+                                    stroke-dasharray="301.6"
+                                    stroke-dashoffset="{{ offset }}"
+                                    stroke-linecap="round"
+                                    transform="rotate(-90 60 60)"/>
+                        </svg>
+                        <div class="cgpa-center-text">
+                            <div class="cgpa-val">
+                                {{ stud_cgpa if stud_cgpa else '—' }}
+                            </div>
+                            <div class="cgpa-denom">/ 10</div>
+                        </div>
+                    </div>
+
+                    <div class="cgpa-grade">
+                        {% if stud_cgpa %}
+                            {% if stud_cgpa >= 8.5 %}
+                                First Class Distinction
+                            {% elif stud_cgpa >= 8.0 %}
+                                First Class
+                            {% elif stud_cgpa >= 7.5 %}
+                                Second Class
+                            {% elif stud_cgpa >= 6.5 %}
+                                Pass Class
+                            {% else %}
+                                Below Average
+                            {% endif %}
+                        {% else %}
+                            No CGPA recorded
+                        {% endif %}
+                    </div>
+
+                    <div class="row g-2 mt-3 text-start">
+                        <div class="col-6">
+                            <div class="acad-mini">
+                                <div class="acad-mini-label">Branch</div>
+                                <div class="acad-mini-val">
+                                    {{ stud_branch if stud_branch else '—' }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="acad-mini">
+                                <div class="acad-mini-label">Grad</div>
+                                <div class="acad-mini-val">
+                                    {{ stud_grad_year if stud_grad_year else '—' }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="acad-mini">
+                                <div class="acad-mini-label">Apps Sent</div>
+                                <div class="acad-mini-val">{{ applied_app_count }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="acad-mini">
+                                <div class="acad-mini-label">Offers</div>
+                                <div class="acad-mini-val" style="color:#2e7d32;">
+                                    {{ offers_count }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Placement Record — only shown if placed -->
+            {% if placed %}
+            <div class="card section-card">
+                <div class="section-card-header">
+                    <span class="title">Placement Record</span>
+                </div>
+                <div class="placed-record">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="placed-co-av">
+                            {{ (company_name or 'NA')[:2].upper() }}
+                        </div>
+                        <div>
+                            <div class="placed-co-name">{{ company_name }}</div>
+                            <div class="placed-co-role">{{ company_role }}</div>
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="placed-stat-box">
+                                <div class="placed-stat-label">Package</div>
+                                <div class="placed-stat-val">
+                                    {{ salary }} 
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="placed-stat-box">
+                                <div class="placed-stat-label">Offer Date</div>
+                                <div class="placed-stat-val-w">
+                                    {{ offer_date }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="section-note">
+                    Contact the placement cell for onboarding steps and joining formalities.
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+
+<section class="auth-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7 col-md-9">
+
+                <!-- Card -->
+                <div class="auth-card">
+
+                    <!-- Header -->
+                    <div class="auth-card-header text-center">
+                        <div class="auth-icon-wrap mb-3">
+                            <span class="auth-icon">🎓</span>
+                        </div>
+                        <h2 class="auth-title">Join CampusHire</h2>
+                        <p class="auth-subtitle">Create your account to get started</p>
+                    </div>
+
+                    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=True) %}
+                        {% if messages %}
+                            {% for category, msg in messages %}
+                                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show mx-3 mt-3" role="alert">
+                                    {{ msg }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}  
+
+                    <!-- Toggle Pills -->
+                    <div class="auth-tabs-wrap px-4 pt-3">
+                        <ul class="nav auth-pills justify-content-center mb-4" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="auth-pill active"
+                                        data-bs-toggle="pill"
+                                        data-bs-target="#student"
+                                        type="button">
+                                    🎓 Student
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="auth-pill"
+                                        data-bs-toggle="pill"
+                                        data-bs-target="#company"
+                                        type="button">
+                                    🏢 Company
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="tab-content px-4 pb-4">
+
+                        <!-- STUDENT FORM -->
+                        <div class="tab-pane fade show active" id="student" role="tabpanel">
+                            <form method="POST">
+                                {{ Studform.hidden_tag() }}
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="auth-field">
+                                            {{ Studform.name.label(class="auth-label") }}
+                                            {{ Studform.name(class="form-control auth-input", placeholder="Full Name") }}
+
+                                            {% if Studform.name.errors %}
+                                                {% for error in Studform.name.errors %}
+                                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="auth-field">
+                                            {{ Studform.usn.label(class="auth-label") }}
+                                            {{ Studform.usn(class="form-control auth-input", placeholder="e.g. 1XX21CS000") }}
+                                            {% if Studform.usn.errors %}
+                                                {% for error in Studform.usn.errors %}
+                                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="auth-field">
+                                            {{ Studform.email.label(class="auth-label") }}
+                                            {{ Studform.email(class="form-control auth-input", placeholder="you@email.com") }}
+                                            {% if Studform.email.errors %}
+                                                {% for error in Studform.email.errors %}
+                                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="auth-field">
+                                            {{ Studform.phone.label(class="auth-label") }}
+                                            {{ Studform.phone(class="form-control auth-input", placeholder="10-digit number") }}
+                                            {% if Studform.phone.errors %}
+                                                {% for error in Studform.phone.errors %}
+                                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">  
+                                        <div class="auth-field">
+                                            {{ Studform.branch.label(class="auth-label") }}
+                                            {{ Studform.branch(class="form-control auth-input", placeholder="e.g. CSE") }}
+                                            {% if Studform.branch.errors %}
+                                                {% for error in Studform.branch.errors %}
+                                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="auth-field">
+                                            {{ Studform.cgpa.label(class="auth-label") }}
+                                            {{ Studform.cgpa(class="form-control auth-input", placeholder="e.g. 8.5") }}
+                                            {% if Studform.cgpa.errors %}
+                                                {% for error in Studform.cgpa.errors %}
+                                                <div class="text-danger small mt-1" >{{error}}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="auth-field">
+                                            {{ Studform.graduation_year.label(class="auth-label") }}
+                                            {{ Studform.graduation_year(class="form-control auth-input", placeholder="e.g. 2026") }}
+                                            {% if Studform.graduation_year.errors %}
+                                                {% for error in Studform.graduation_year.errors %}
+                                                    <div class="text-danger small mt-1" >{{error}}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="auth-field">
+                                            {{ Studform.resume.label(class="auth-label") }}
+                                            {{ Studform.resume(class="form-control auth-input", placeholder="https://drive.google.com/...") }}
+                                            {% if Studform.resume.errors %}
+                                                {% for error in Studform.resume.errors %}
+                                                    <div class="text-danger small mt-1" >{{error}}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="auth-field">
+                                            {{ Studform.password.label(class="auth-label") }}
+                                            <div class="pw-wrap">
+                                                {{ Studform.password(class="form-control auth-input", placeholder="Min 3 characters", id="studPass") }}
+                                                <button type="button" class="pw-toggle" onclick="togglePw('studPass', this)">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                            </div>
+                                            {% if Studform.password.errors %}
+                                                {% for error in Studform.password.errors %}
+                                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="auth-field">
+                                            {{ Studform.confirm_password.label(class="auth-label") }}
+                                            <div class="pw-wrap">
+                                                {{ Studform.confirm_password(class="form-control auth-input", placeholder="Repeat password", id="studConfPass") }}
+                                                <button type="button" class="pw-toggle" onclick="togglePw('studConfPass', this)">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                            </div>
+                                            {% if Studform.confirm_password.errors %}
+                                                {% for error in Studform.confirm_password.errors %}
+                                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-12 mt-2">
+                                        {{ Studform.submit(class="btn auth-btn w-100", value="Create Student Account") }}
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- COMPANY FORM -->
+                        <div class="tab-pane fade" id="company" role="tabpanel">
+                            <form method="POST">
+                                {{ Compform.hidden_tag() }}
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="auth-field">
+                                            {{ Compform.name.label(class="auth-label") }}
+                                            {{ Compform.name(class="form-control auth-input", placeholder="Company Name") }}
+                                            {% if Compform.name.errors %}
+                                                {% for error in Compform.name.errors %}
+                                                    <div class="text-danger small mt-1" >{{error}}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="auth-field">
+                                            {{ Compform.hr_contact.label(class="auth-label") }}
+                                            {{ Compform.hr_contact(class="form-control auth-input", placeholder="HR Phone Number") }}
+                                            {% if Compform.hr_contact.errors %}
+                                                {% for error in Compform.hr_contact.errors %}
+                                                    <div class="text-danger small mt-1" >{{error}}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="auth-field">
+                                            {{ Compform.email.label(class="auth-label") }}
+                                            {{ Compform.email(class="form-control auth-input", placeholder="company@email.com") }}
+                                            {% if Compform.email.errors %}
+                                                {% for error in Compform.email.errors %}
+                                                    <div class="text-danger small mt-1" >{{error}}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="auth-field">
+                                            {{ Compform.website.label(class="auth-label") }}
+                                            {{ Compform.website(class="form-control auth-input", placeholder="https://yourcompany.com") }}
+                                            {% if Compform.website.errors %}
+                                                {% for error in Compform.website.errors %}
+                                                    <div class="text-danger small mt-1" >{{error}}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="auth-field">
+                                            {{ Compform.description.label(class="auth-label") }}
+                                            {{ Compform.description(class="form-control auth-input auth-textarea", placeholder="Brief description of your company...") }}
+                                            {% if Compform.description.errors %}
+                                                {% for error in Compform.description.errors %}
+                                                    <div class="text-danger small mt-1" >{{error}}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="auth-field">
+                                            {{ Compform.password.label(class="auth-label") }}
+                                            <div class="pw-wrap">
+                                                {{ Compform.password(class="form-control auth-input", placeholder="Min 3 characters", id="compPass") }}
+                                                <button type="button" class="pw-toggle" onclick="togglePw('compPass', this)">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                            </div>
+                                            {% if Compform.password.errors %}
+                                                {% for error in Compform.password.errors %}
+                                                    <div class="text-danger small mt-1" >{{error}}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="auth-field">
+                                            {{ Compform.confirm_password.label(class="auth-label") }}
+                                            <div class="pw-wrap">
+                                                {{ Compform.confirm_password(class="form-control auth-input", placeholder="Repeat password", id="compConfPass") }}
+                                                <button type="button" class="pw-toggle" onclick="togglePw('compConfPass', this)">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                            </div>
+                                            {% if Compform.confirm_password.errors %}
+                                                {% for error in Compform.confirm_password.errors %}
+                                                    <div class="text-danger small mt-1" >{{error}}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-12 mt-2">
+                                        {{ Compform.submit(class="btn auth-btn w-100", value="Create Company Account") }}
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                    </div>
+
+                    <!-- Footer link -->
+                    <div class="auth-card-footer text-center">
+                        <p class="mb-0">Already have an account?
+                            <a href="{{ url_for('auth.login') }}" class="auth-link">Sign in here</a>
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,705 @@
+{% extends 'base.html' %}
+
+{% block title %}Company Dashboard{% endblock %}
+
+{% block content %}
+
+
+{% if company.approval_status=='Approved' %}
+
+<div class="container-fluid px-4 py-4">
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            {% for category, msg in messages %}
+                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show mb-3">
+                    {{ msg }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Top bar -->
+    <div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-3">
+        <div>
+            <div class="page-title">Welcome back, {{ company.name }}</div>
+            <div class="page-subtitle">
+                Company Dashboard
+                {% if not company.is_blacklisted %}
+                    &nbsp;·&nbsp; {{ active_drives_count }} active drive{{ 's' if active_drives_count != 1 else '' }}
+                {% endif %}
+            </div>
+        </div>
+        {% if company.is_blacklisted %}
+            <span class="chip-suspended">🚫 Account Suspended</span>
+        {% else %}
+            <span class="chip-approved">✓ Approved</span>
+        {% endif %}
+    </div>
+
+    <!-- Suspension Banner -->
+    {% if company.is_blacklisted %}
+    <div class="suspension-banner mb-3">
+        <span style="font-size:1.5rem;flex-shrink:0">🚫</span>
+        <div>
+            <div class="sus-title">Your account has been suspended by the placement administrator</div>
+            <div class="sus-body">
+                All your active placement drives have been cancelled and all student
+                applications have been automatically withdrawn. You cannot create new
+                drives or take any actions until this suspension is resolved.
+            </div>
+            <div class="sus-contact">📞 Contact your placement coordinator to resolve this issue.</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Date Rejection Banners — only for non-blacklisted -->
+    {% if not company.is_blacklisted %}
+        {% for drive in company.drives %}
+            {% if drive.date_rejected == True %}
+            <div class="date-rej-banner">
+                <span style="font-size:1.2rem;flex-shrink:0">⚠</span>
+                <div>
+                    <div class="date-rej-title">
+                        Drive date not approved — {{ drive.job_title }}
+                    </div>
+                    <div style="font-size:11px;color:#a05000;">
+                        Admin rejected your proposed drive date. Propose a new one to resume.
+                    </div>
+                    {% if drive.date_rejection_note %}
+                    <div class="date-rej-note">
+                        <strong>Admin:</strong> {{ drive.date_rejection_note }}
+                    </div>
+                    {% endif %}
+                    <a href="{{ url_for('company.proposeDate', driveId=drive.id) }}"
+                       class="btn-approve-action d-inline-block mt-2">
+                        Propose New Date
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4 {{ 'opacity-50' if company.is_blacklisted else '' }}">
+
+        <div class="col-6 col-md-3">
+            <div class="stat-mini {{ 'stat-mini-red' if company.is_blacklisted else 'stat-mini-green' }}">
+                <div class="stat-mini-num" style="color:#1a3d1a;">{{ total_drives_count }}</div>
+                <div class="stat-mini-label">Active Drives</div>
+                <div class="d-flex gap-1 flex-wrap mt-1">
+                    {% if not company.is_blacklisted %}
+                        <span class="badge rounded-pill badge-active">{{ active_drives_count }} Live</span>
+                        <span class="badge rounded-pill badge-pending">{{ pending_drives_count }} Pending</span>
+                    {% else %}
+                        <span class="badge rounded-pill badge-rejected">All cancelled</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="stat-mini {{ 'stat-mini-red' if company.is_blacklisted else 'stat-mini-teal' }}">
+                <div class="stat-mini-num" style="color:#1a3d1a;">{{ side_application_count }}</div>
+                <div class="stat-mini-label">Applications</div>
+                <div class="d-flex gap-1 flex-wrap mt-1">
+                    {% if not company.is_blacklisted %}
+                        <span class="badge rounded-pill badge-applied">{{ active_apps_count }} Active</span>
+                        <span class="badge rounded-pill badge-selected">{{ selected_apps_count }} Selected</span>
+                    {% else %}
+                        <span class="badge rounded-pill badge-rejected">All withdrawn</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="stat-mini {{ 'stat-mini-red' if company.is_blacklisted else 'stat-mini-amber' }}">
+                <div class="stat-mini-num" style="color:#1a3d1a;">{{ selected_apps_count }}</div>
+                <div class="stat-mini-label">Selected</div>
+                <div class="d-flex gap-1 mt-1">
+                    {% if not company.is_blacklisted %}
+                        <span class="badge rounded-pill badge-active">Across drives</span>
+                    {% else %}
+                        <span class="badge rounded-pill badge-closed">Historical</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="stat-mini {{ 'stat-mini-red' if company.is_blacklisted else 'stat-mini-blue' }}">
+                <div class="stat-mini-num" style="color:#1a3d1a;">{{ closed_drives_count }}</div>
+                <div class="stat-mini-label">Closed Drives</div>
+                <div class="d-flex gap-1 mt-1">
+                    {% if not company.is_blacklisted %}
+                        <span class="badge rounded-pill badge-closed">Concluded</span>
+                    {% else %}
+                        <span class="badge rounded-pill badge-closed">Historical</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- My Drives + Recent Applications -->
+    <div class="row g-3 mb-3">
+
+        <!-- My Drives -->
+        <div class="col-lg-6">
+            <div class="card section-card h-100">
+                <div class="section-card-header d-flex align-items-center justify-content-between">
+                    {% if company.is_blacklisted %}  
+                        <span class="title">Drive History</span>
+                        <span class="small text-muted fst-italic">Read only — suspended</span>
+                    {% else %}
+                        <span class="title">My Drives</span>
+                        <a href="{{ url_for('company.createDrive') }}"
+                           class="btn-approve-action">+ Create Drive</a>
+                    {% endif %}
+                </div>
+
+                {% for drive in company.drives %}
+                <div class="admin-list-row d-flex align-items-center justify-content-between
+                            {% if company.is_blacklisted %}drive-row-suspended{% endif %}">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="comp-av-dash
+                            {% if drive.approval_status == 'Rejected' %}comp-av-red
+                            {% elif drive.date_rejected %}comp-av-amber
+                            {% elif drive.approval_status == 'Closed' %}comp-av-teal
+                            {% else %}comp-av-green{% endif %}">
+                            {{ (drive.company.name or 'NA')[:2].upper() }}
+                        </div>
+                        <div>
+                            <div class="row-name">{{ drive.job_title }}</div>
+                            <div class="row-meta">
+                                Deadline {{ drive.application_deadline.strftime('%d %b') }}
+                                &nbsp;·&nbsp;
+                                {% if drive.date_rejected %}
+                                    <span style="color:#e65100;">Date rejected</span>
+                                {% elif drive.approval_status == 'Pending' %}
+                                    Tentative {{ drive.drive_date.strftime('%d %b') }}
+                                {% elif drive.approval_status == 'Approved' %}
+                                    Drive {{ drive.drive_date.strftime('%d %b') }}
+                                {% elif drive.approval_status == 'Closed' %}
+                                    Ended {{ drive.drive_date.strftime('%d %b') }}
+                                {% else %}
+                                    {{ drive.drive_date.strftime('%d %b') }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- Status badge -->
+                        {% if drive.date_rejected %}
+                            <span class="rescheduling-badge">↩ Reschedule</span>
+                        {% elif drive.approval_status == 'Approved' %}
+                            <span class="badge rounded-pill badge-active">Live</span>
+                        {% elif drive.approval_status == 'Pending' %}
+                            <span class="pending-badge">⏳ Awaiting</span>
+                        {% elif drive.approval_status == 'Closed' %}
+                            <span class="badge rounded-pill badge-closed">Ended</span>
+                        {% else %}
+                            <span class="badge rounded-pill badge-rejected">Cancelled</span>
+                        {% endif %}
+                        <!-- Action button -->
+                        {% if drive.date_rejected %}
+                            <a href="{{ url_for('company.proposeDate', driveId=drive.id) }}"
+                               class="btn-view-action">Update</a>
+                        {% elif drive.approval_status == 'Approved' %}
+                            <a href="{{ url_for('company.driveProfile', driveId=drive.id) }}"
+                               class="btn-view-action">View</a>
+                        {% elif drive.approval_status == 'Closed' %}
+                            <a href="{{ url_for('company.recruitedDetails', driveId=drive.id) }}"
+                               class="btn-view-action">Results</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4 mb-0">No drives posted yet.</p>
+                {% endfor %}
+
+                {% if company.is_blacklisted %}
+                <div class="comp-note-red">
+                    ⚠ All drives cancelled due to account suspension. No new drives can be created.
+                </div>
+                {% else %}
+                <div class="section-note">
+                    ℹ Drive dates need admin approval before students can apply.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Applications -->
+        <div class="col-lg-6">
+            <div class="card section-card h-100">
+                <div class="section-card-header d-flex align-items-center justify-content-between">
+                    <span class="title">Recent Applications</span>
+                    {% if not company.is_blacklisted %}
+                        <a href="{{ url_for('company.applications') }}" class="btn-view-action">
+                            View all →
+                        </a>
+                    {% else %}
+                        <span class="small text-muted fst-italic">All withdrawn</span>
+                    {% endif %}
+                </div>
+
+                {% for app in recent_applications %}
+                <div class="admin-list-row d-flex align-items-center justify-content-between
+                            {% if company.is_blacklisted %}drive-row-suspended{% endif %}">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="comp-app-av {% if app.student.is_blacklisted %}comp-app-av-r{% endif %}">
+                            {{ app.student.name[:2].upper() }}
+                        </div>
+                        <div>
+                            <div class="row-name">{{ app.student.name }}</div>
+                            <div class="row-meta">
+                                {{ app.drive.job_title }}
+                                &nbsp;·&nbsp; CGPA {{ app.student.cgpa }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        {% if app.status == 'Applied' %}
+                            <span class="badge rounded-pill badge-applied">In Progress</span>
+                            {% if not company.is_blacklisted %}
+                                <a href="{{ url_for('company.reviewApplication', appId=app.id) }}"
+                                   class="btn-view-action">Review</a>
+                            {% endif %}
+                        {% elif app.status == 'Selected' %}
+                            <span class="badge rounded-pill badge-selected">Selected ✓</span>
+                        {% elif app.status == 'Rejected' %}
+                            <span class="badge rounded-pill badge-rejected">Not Selected</span>
+                        {% else %}
+                            <span class="badge rounded-pill badge-cancelled">Withdrawn</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4 mb-0">No applications yet.</p>
+                {% endfor %}
+
+                {% if company.is_blacklisted %}
+                <div class="comp-note-red">
+                    ⚠ All student applications have been withdrawn due to account suspension.
+                </div>
+                {% else %}
+                <div class="section-note">
+                    ℹ Review applications and select or reject candidates after interviews.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Upcoming Drives Table — only for non-blacklisted -->
+    {% if not company.is_blacklisted %}
+    <div class="card section-card">
+        <div class="section-card-header d-flex align-items-center justify-content-between">
+            <span class="title">Upcoming Drives</span>
+            <span class="badge rounded-pill badge-active">
+                {{ upcoming_confirmed_drive_count }} confirmed
+            </span>
+        </div>
+
+        <table class="admin-table table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Drive</th>
+                    <th>App Deadline</th>
+                    <th>Drive Date</th>
+                    <th>Applicants</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for drive in upcoming_drives %}
+                <tr {% if drive.date_rejected %}style="background:#fffdf5;"{% endif %}>
+
+                    <td>
+                        <div class="row-name">{{ drive.job_title }}</div>
+                        {% if drive.salary_package %}
+                            <div class="row-meta">{{ drive.salary_package }} LPA</div>
+                        {% endif %}
+                    </td>
+
+                    <td class="font-monospace text-muted small">
+                        {{ drive.application_deadline.strftime('%d %b %Y') }}
+                    </td>
+
+                    <td>
+                        {% if drive.date_rejected %}
+                            <span class="rescheduling-badge">↩ Rescheduling</span>
+                        {% elif drive.approval_status == 'Approved' %}
+                            {% set dd = (drive.drive_date - now.date()).days %}
+                            {% if dd <= 0 %}
+                                <span class="badge rounded-pill dl-over">Today</span>
+                            {% elif dd <= 7 %}
+                                <span class="badge rounded-pill dl-warn">⚠ {{ dd }}d left</span>
+                            {% else %}
+                                <span class="badge rounded-pill dl-safe">{{ dd }}d away</span>
+                            {% endif %}
+                        {% else %}
+                            <div class="row-meta small">
+                                Tentative {{ drive.drive_date.strftime('%d %b %Y') }}
+                            </div>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <span class="badge rounded-pill badge-applied">
+                            {{ drive_app.get(drive.id, 0) }} applied
+                        </span>
+                    </td>
+
+                    <td>
+                        {% if drive.date_rejected %}
+                            <span class="badge rounded-pill badge-rejected">Date Rejected</span>
+                        {% elif drive.approval_status == 'Approved' %}
+                            <span class="badge rounded-pill badge-active">Confirmed ✓</span>
+                        {% elif drive.approval_status == 'Pending' %}
+                            <span class="pending-badge">⏳ Yet to confirm</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if drive.date_rejected %}
+                            <a href="{{ url_for('company.proposeDate', driveId=drive.id) }}"
+                               class="btn-approve-action">Update</a>
+                        {% elif drive.approval_status == 'Approved' or drive.approval_status == 'Pending' %}
+                            <a href="{{ url_for('company.driveProfile', driveId=drive.id) }}"
+                               class="btn-view-action">Manage</a>
+                        {% endif %}
+                    </td>
+
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-muted text-center py-4">
+                        No upcoming drives.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="section-note">
+            ℹ Students can only apply after admin confirms the drive date.
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+
+{% elif company.approval_status=='Pending' %}
+
+<div class="container-fluid px-4 py-4">
+
+    <!-- Topbar -->
+    <div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-3">
+        <div>
+            <div class="page-title">Welcome, {{ company.name }}</div>
+            <div class="page-subtitle">Company Dashboard</div>
+        </div>
+        <span class="chip-pending-reg">⏳ Pending Approval</span>
+    </div>
+
+    <!-- Pending Banner -->
+    <div class="pending-reg-banner mb-4">
+        <span style="font-size:2rem;flex-shrink:0;margin-top:2px">⏳</span>
+        <div style="flex:1">
+            <div class="prb-title">Your registration is under review</div>
+            <div class="prb-body">
+                The placement admin is reviewing your company profile.
+                Once approved you will have full access to post drives,
+                review student applications, and manage placements.
+                This typically takes 1–2 working days.
+            </div>
+            <div class="d-flex align-items-center flex-wrap gap-2">
+                <span class="prb-step prb-step-done">✓ Registered</span>
+                <span style="color:#c8e6c9;font-size:12px">→</span>
+                <span class="prb-step prb-step-active">⏳ Admin Review</span>
+                <span style="color:#c8e6c9;font-size:12px">→</span>
+                <span class="prb-step prb-step-wait">Post Drives</span>
+                <span style="color:#c8e6c9;font-size:12px">→</span>
+                <span class="prb-step prb-step-wait">Hire Students</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two column layout -->
+    <div class="row g-3">
+
+        <!-- Left column — profile + steps -->
+        <div class="col-lg-8">
+
+            <!-- Submitted Profile -->
+            <div class="card section-card mb-3">
+                <div class="section-card-header d-flex align-items-center justify-content-between">
+                    <span class="title">Your Submitted Profile</span>
+                    <span class="text-muted small">Verify your details below</span>
+                </div>
+                <div class="p-4">
+
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        <div class="comp-pending-av">
+                            {{ (company.name or 'NA')[:2].upper() }}
+                        </div>
+                        <div>
+                            <div class="row-name" style="font-size:0.95rem;">
+                                {{ company.name }}
+                            </div>
+                            <div class="row-meta">
+                                Submitted {{ company.created_at.strftime('%d %b %Y') }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pend-info-row">
+                        <span>Email</span>
+                        <span>{{ company.email }}</span>
+                    </div>
+                    <div class="pend-info-row">
+                        <span>HR Contact</span>
+                        <span>{{ company.hr_contact if company.hr_contact else 'Not provided' }}</span>
+                    </div>
+                    <div class="pend-info-row">
+                        <span>Website</span>
+                        <span>
+                            {% if company.website %}
+                                <a href="{{ company.website }}" target="_blank"
+                                   style="color:#2e7d32;text-decoration:none;">
+                                    {{ company.website }}
+                                </a>
+                            {% else %}
+                                Not provided
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="pend-info-row">
+                        <span>Description</span>
+                        <span style="font-size:11px;line-height:1.5;max-width:400px;">
+                            {{ company.description if company.description else 'Not provided' }}
+                        </span>
+                    </div>
+                </div>
+                <div class="section-note">
+                    ℹ If any detail is incorrect contact your placement coordinator — you cannot edit after submission.
+                </div>
+            </div>
+
+            <!-- What Happens Next -->
+            <div class="card section-card">
+                <div class="section-card-header">
+                    <span class="title">What Happens Next</span>
+                </div>
+
+                <div class="d-flex align-items-flex-start gap-3 p-3"
+                     style="border-bottom:0.5px solid #f1f8f1;">
+                    <div class="step-num">1</div>
+                    <div>
+                        <div class="row-name mb-1">Admin Reviews Your Profile</div>
+                        <div class="row-meta">
+                            The placement coordinator checks your company details
+                            and eligibility for campus drives.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-flex-start gap-3 p-3"
+                     style="border-bottom:0.5px solid #f1f8f1;">
+                    <div class="step-num">2</div>
+                    <div>
+                        <div class="row-name mb-1">You Get Approved</div>
+                        <div class="row-meta">
+                            Once approved, your dashboard unlocks and you can
+                            start posting placement drives.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-flex-start gap-3 p-3"
+                     style="border-bottom:0.5px solid #f1f8f1;">
+                    <div class="step-num">3</div>
+                    <div>
+                        <div class="row-name mb-1">Post a Drive</div>
+                        <div class="row-meta">
+                            Create a placement drive with role details, salary,
+                            eligibility criteria, and a proposed date for admin to confirm.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-flex-start gap-3 p-3">
+                    <div class="step-num">4</div>
+                    <div>
+                        <div class="row-name mb-1">Review Applications &amp; Hire</div>
+                        <div class="row-meta">
+                            Students apply, you review their profiles and
+                            select or reject them after interviews.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Right column — locked sections -->
+        <div class="col-lg-4">
+            <div class="locked-box">
+                <div class="locked-box-icon">📋</div>
+                <div class="locked-box-title">My Drives — Locked</div>
+                <div class="locked-box-sub">Available after approval</div>
+            </div>
+            <div class="locked-box">
+                <div class="locked-box-icon">👥</div>
+                <div class="locked-box-title">Applications — Locked</div>
+                <div class="locked-box-sub">Available after approval</div>
+            </div>
+            <div class="locked-box">
+                <div class="locked-box-icon">📊</div>
+                <div class="locked-box-title">Stats — Locked</div>
+                <div class="locked-box-sub">Available after approval</div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+
+{% else %}
+
+<div class="container">
+    <div class="head">
+            <div class="heading">
+                <h2>Welcome back, {{company.name}}</h2>
+                <p>Company Dashboard</p>
+            </div>
+            <div class="status">
+                <p>✗ Registration Rejected</p>
+            </div>
+    </div>
+    
+
+    <div class="banner">
+        <p>Your registration was not approved</p>
+        <p>The placement admin has reviewed your company profile and declined the registration. You cannot access CampusHire features until this is resolved.</p>
+        <p>This may be due to:</p>
+        <ul class="points">
+            <li>Incomplete or incorrect company information</li>
+            <li>Company not eligible for campus placement drive</li>
+            <li>Duplicate registration detected</li>
+            <li>Company not empanelled with this institution</li>
+        </ul>
+        <div>
+           📞 Contact your placement coordinator to resolve this 
+        </div>
+    </div>
+
+<div class="col1">
+
+<div class="profile">
+    <div class="head">
+        <p>Submitted Profile</p>
+        <p>Registration Declined</p>
+    </div>
+
+    <div class="name">
+        <p>{{(company.name or "NA")[:2].upper()}}</p>
+        <div class="brief">
+            <p>{{company.name}}</p>
+            <p>Submitted {{company.created_at.strftime('%d, %b, %Y')}}</p>
+        </div>
+    </div>
+
+    <div class="more_details">
+        <div class="row1">
+            <p>Email</p>
+            <p>{{company.email}}</p>
+        </div>
+        <div class="row2">
+            <p>HR Contact</p>
+            <p>{{company.hr_contact}}</p>
+        </div>
+        <div class="row3">
+            <p>Website</p>
+            <p>{{company.website}}</p>
+        </div>
+        <div class="row4">
+            <p>Description</p>
+            <p>{{company.description}}</p>
+        </div>
+    </div>
+    <p>⚠ Contact your placement coordinator if you believe this rejection is an error.</p>
+</div>
+
+<div class="steps">
+    <div class="head">
+        What You Can Do
+    </div>
+
+    <div class="step1">
+        <div class="icon">
+            📞
+        </div>
+        <div class="details">
+            <h3>Contact Placement Coordinator</h3>
+            <p>Reach out to your college placement office directly to understand why the registration was declined and how to resolve it.</p>
+        </div>
+    </div>
+
+    <div class="step2">
+        <div class="icon">
+            📝
+        </div>
+        <div class="details">
+            <h3>Verify Your Submitted Details</h3>
+            <p>Check the profile shown above for any errors — wrong email, incomplete description, or incorrect contact details.</p>
+        </div>
+    </div>
+    
+    <div class="step3">
+        <div class="number">
+            🔄
+        </div>
+        <div class="details">
+            <h3>Re-register if Advised</h3>
+            <p>If the coordinator advises you to re-register, log out, create a new account with corrected details, and wait for re-approval.</p>
+        </div>
+    </div>
+
+</div>
+</div>
+
+<div class="col2">
+    <div class="drives">
+        <p>My Drives --- Unavailable</p>
+        <p>Registration not approved</p>
+    </div>
+    <div class="application">
+        <p>Applications --- Unavailable</p>
+        <p>Registration not approved</p>
+    </div>
+    <div class="stats">
+        <p>Stats --- Unavailable</p>
+        <p>Registration not approved</p>
+    </div>
+</div>
+
+</div>
+
+{% endif %}
+
+
+
+{% endblock %}

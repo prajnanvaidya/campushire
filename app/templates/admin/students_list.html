@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+{% block title %}Students — Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <!-- Page Header -->
+    <div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-3">
+        <div>
+            <div class="page-title">Students</div>
+            <div class="page-subtitle">
+                {% if act_filter == "all" %}
+                    All registered students on CampusHire
+                {% elif act_filter == "active" %}
+                    All active students on CampusHire
+                {% else %}
+                    Blacklisted students on CampusHire
+                {% endif %}
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('admin.students', filter='all') }}"
+               class="filter-pill {% if act_filter == 'all' %}active{% endif %}">All</a>
+            <a href="{{ url_for('admin.students', filter='active') }}"
+               class="filter-pill {% if act_filter == 'active' %}active{% endif %}">Active</a>
+            <a href="{{ url_for('admin.students', filter='restricted') }}"
+               class="filter-pill {% if act_filter == 'restricted' %}active{% endif %}">Restricted</a>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-mini">
+                <div class="stat-mini-num" style="color:#1a3d1a;">{{ total_students }}</div>
+                <div class="stat-mini-label">Total students</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-mini">
+                <div class="stat-mini-num" style="color:#3b6d11;">{{ active_students }}</div>
+                <div class="stat-mini-label">Active</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-mini">
+                <div class="stat-mini-num" style="color:#a32d2d;">{{ blacklisted_students }}</div>
+                <div class="stat-mini-label">Restricted</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-mini">
+                <div class="stat-mini-num" style="color:#185fa5;">{{ applied_students }}</div>
+                <div class="stat-mini-label">Applied to drives</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card section-card">
+        <div class="section-card-header d-flex align-items-center justify-content-between">
+            <span class="title">Student List</span>
+            <span class="badge rounded-pill badge-closed">
+                {{ studs.first }}–{{ studs.last }} of {{ studs.total }}
+            </span>
+        </div>
+
+        <table class="admin-table table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Student</th>
+                    <th>USN</th>
+                    <th>Branch &amp; Batch</th>
+                    <th>CGPA</th>
+                    <th>Applications</th>
+                    <th>Registered</th>
+                    {% if act_filter == "all" %}
+                    <th>Status</th>
+                    {% endif %}
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in studs.items %}
+                <tr>
+                    <!-- ID -->
+                    <td class="font-monospace text-muted small">{{ '%03d' % student.id }}</td>
+
+                    <!-- Name + email -->
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="student-av {% if student.is_blacklisted %}student-av-red{% else %}student-av-green{% endif %}">
+                                {{ student.name[:2].upper() }}
+                            </div>
+                            <div>
+                                <div class="row-name">{{ student.name }}</div>
+                                <div class="row-meta">{{ student.email }}</div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- USN -->
+                    <td class="font-monospace text-muted small">{{ student.usn }}</td>
+
+                    <!-- Branch & Batch -->
+                    <td>
+                        <div class="row-name" style="font-size:0.82rem;">{{ student.branch if student.branch else '—' }}</div>
+                        <div class="row-meta">Batch {{ student.graduation_year if student.graduation_year else '—' }}</div>
+                    </td>
+
+                    <!-- CGPA -->
+                    <td>
+                        {% if student.cgpa %}
+                            {% if student.cgpa >= 8.0 %}
+                                <span class="badge rounded-pill cgpa-high">{{ student.cgpa }}</span>
+                            {% elif student.cgpa >= 7.0 %}
+                                <span class="badge rounded-pill cgpa-mid">{{ student.cgpa }}</span>
+                            {% else %}
+                                <span class="badge rounded-pill cgpa-low">{{ student.cgpa }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Applications -->
+                    <td>
+                        {% set app_count = stud_app.get(student.id, 0) %}
+                        {% if app_count > 0 %}
+                            <span class="badge rounded-pill badge-applied">{{ app_count }} applied</span>
+                        {% else %}
+                            <span class="badge rounded-pill badge-closed">0 applied</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Registered -->
+                    <td class="font-monospace text-muted small">
+                        {{ student.created_at.strftime('%d %b %Y') }}
+                    </td>
+
+                    <!-- Status — only for 'all' filter -->
+                    {% if act_filter == "all" %}
+                    <td>
+                        {% if student.is_blacklisted %}
+                            <span class="badge rounded-pill badge-rejected">Restricted</span>
+                        {% else %}
+                            <span class="badge rounded-pill badge-active">Active</span>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+
+                    <!-- Actions -->
+                    <td>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="{{ url_for('admin.studentProfile', id=student.id) }}"
+                               class="btn-view-action">Profile</a>
+
+                            {% if student.is_blacklisted %}
+                                <a href="{{ url_for('admin.undoBlacklist', role='student', id=student.id) }}"
+                                   class="btn-approve-action">Undo</a>
+                            {% else %}
+                                <a href="{{ url_for('admin.StudBlock', id=student.id, next='students') }}"
+                                   class="btn-restrict">Restrict</a>
+                            {% endif %}
+                        </div>
+                    </td>
+
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="{% if act_filter == 'all' %}9{% else %}8{% endif %}"
+                        class="text-muted text-center py-4">
+                        No students found for this filter.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Note -->
+        <div class="section-note">
+            ℹ Restricting a student withdraws all their open applications and blocks future access. Use Undo to reverse this.
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex align-items-center justify-content-between px-3 py-3 flex-wrap gap-2">
+            <span class="text-muted small">
+                Page {{ studs.page }} of {{ studs.pages }}
+            </span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item {% if not studs.has_prev %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ url_for('admin.students', filter=act_filter, page=studs.prev_num) }}">
+                            Previous
+                        </a>
+                    </li>
+                    {% for p in studs.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if p %}
+                            <li class="page-item {% if p == studs.page %}active{% endif %}">
+                                <a class="page-link"
+                                   href="{{ url_for('admin.students', filter=act_filter, page=p) }}">
+                                    {{ p }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if not studs.has_next %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ url_for('admin.students', filter=act_filter, page=studs.next_num) }}">
+                            Next
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

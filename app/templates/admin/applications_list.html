@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+{% block title %}Applications — Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <!-- Page Header -->
+    <div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-3">
+        <div>
+            <div class="page-title">Applications</div>
+            <div class="page-subtitle">
+                {% if active_filter == 'all' %}
+                    All student applications on CampusHire
+                {% elif active_filter == 'applied' %}
+                    Applications currently in progress
+                {% elif active_filter == 'selected' %}
+                    Students selected by companies
+                {% elif active_filter == 'rejected' %}
+                    Applications that were not selected
+                {% else %}
+                    Withdrawn or cancelled applications
+                {% endif %}
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('admin.applications', filter='all') }}"
+               class="filter-pill {% if active_filter == 'all' %}active{% endif %}">All</a>
+            <a href="{{ url_for('admin.applications', filter='applied') }}"
+               class="filter-pill {% if active_filter == 'applied' %}active{% endif %}">In Progress</a>
+            <a href="{{ url_for('admin.applications', filter='selected') }}"
+               class="filter-pill {% if active_filter == 'selected' %}active{% endif %}">Selected</a>
+            <a href="{{ url_for('admin.applications', filter='rejected') }}"
+               class="filter-pill {% if active_filter == 'rejected' %}active{% endif %}">Rejected</a>
+            <a href="{{ url_for('admin.applications', filter='cancelled') }}"
+               class="filter-pill {% if active_filter == 'cancelled' %}active{% endif %}">Cancelled</a>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-xl-auto flex-xl-fill">
+            <div class="stat-mini">
+                <div class="stat-mini-num" style="color:#1a3d1a;">{{ total_count }}</div>
+                <div class="stat-mini-label">Total</div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-auto flex-xl-fill">
+            <div class="stat-mini">
+                <div class="stat-mini-num" style="color:#185fa5;">{{ applied_count }}</div>
+                <div class="stat-mini-label">In Progress</div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-auto flex-xl-fill">
+            <div class="stat-mini">
+                <div class="stat-mini-num" style="color:#3b6d11;">{{ selected_count }}</div>
+                <div class="stat-mini-label">Placed</div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-auto flex-xl-fill">
+            <div class="stat-mini">
+                <div class="stat-mini-num" style="color:#a32d2d;">{{ rejected_count }}</div>
+                <div class="stat-mini-label">Not Selected</div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-auto flex-xl-fill">
+            <div class="stat-mini">
+                <div class="stat-mini-num" style="color:#5f5e5a;">{{ cancelled_count }}</div>
+                <div class="stat-mini-label">Withdrawn</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card section-card">
+        <div class="section-card-header d-flex align-items-center justify-content-between">
+            <span class="title">Application List</span>
+            <span class="badge rounded-pill badge-closed">
+                {{ apps.first }}–{{ apps.last }} of {{ apps.total }}
+            </span>
+        </div>
+
+        <table class="admin-table table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Student</th>
+                    <th>Drive / Company</th>
+                    <th>CGPA</th>
+                    <th>Applied On</th>
+                    <th>Drive Date</th>
+                    <th>Outcome</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in apps.items %}
+                <tr>
+                    <!-- ID -->
+                    <td class="font-monospace text-muted small">{{ '%03d' % app.id }}</td>
+
+                    <!-- Student -->
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="app-student-av {% if app.student.is_blacklisted %}app-student-av-red{% else %}app-student-av-green{% endif %}">
+                                {{ app.student.name[:2].upper() }}
+                            </div>
+                            <div>
+                                <div class="row-name">{{ app.student.name }}</div>
+                                <div class="row-meta">
+                                    {{ app.student.usn }}
+                                    {% if app.student.branch %}
+                                        &nbsp;·&nbsp; {{ app.student.branch }}
+                                    {% endif %}
+                                    {% if app.student.is_blacklisted %}
+                                        <span style="color:#c62828;font-size:10px;"> · Restricted</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- Drive / Company -->
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="app-company-av">
+                                {{ (app.drive.company.name or 'NA')[:2].upper() }}
+                            </div>
+                            <div>
+                                <div class="row-name" style="font-size:0.82rem;">
+                                    {{ app.drive.job_title }}
+                                </div>
+                                <div class="row-meta">{{ app.drive.company.name }}</div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- CGPA -->
+                    <td>
+                        {% if app.student.cgpa %}
+                            {% if app.student.cgpa >= 8.0 %}
+                                <span class="badge rounded-pill cgpa-high">{{ app.student.cgpa }}</span>
+                            {% elif app.student.cgpa >= 7.0 %}
+                                <span class="badge rounded-pill cgpa-mid">{{ app.student.cgpa }}</span>
+                            {% else %}
+                                <span class="badge rounded-pill cgpa-low">{{ app.student.cgpa }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Applied On -->
+                    <td class="font-monospace text-muted small">
+                        {{ app.created_at.strftime('%d %b %Y') }}
+                    </td>
+
+                    <!-- Drive Date -->
+                    <td>
+                        {% if app.drive.approval_status == 'Pending' %}
+                            <div class="row-name" style="font-size:0.8rem;color:#854f0b;">
+                                {{ app.drive.drive_date.strftime('%d %b %Y') }}
+                            </div>
+                            <div class="row-meta">Tentative</div>
+                        {% elif app.drive.approval_status == 'Approved' %}
+                            <span class="badge rounded-pill badge-active">
+                                {{ app.drive.drive_date.strftime('%d %b %Y') }}
+                            </span>
+                        {% elif app.drive.approval_status == 'Closed' %}
+                            <div class="font-monospace text-muted small">
+                                {{ app.drive.drive_date.strftime('%d %b %Y') }}
+                            </div>
+                            <div class="row-meta">Ended</div>
+                        {% else %}
+                            <span class="text-muted small">Company blacklisted</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Outcome -->
+                    <td>
+                        {% if app.status == 'Applied' %}
+                            <span class="badge rounded-pill badge-applied">In Progress</span>
+                        {% elif app.status == 'Selected' %}
+                            <span class="badge rounded-pill badge-selected">Placed ✓</span>
+                        {% elif app.status == 'Rejected' %}
+                            <span class="badge rounded-pill badge-rejected">Not Selected</span>
+                        {% else %}
+                            <span class="badge rounded-pill badge-cancelled">Withdrawn</span>
+                        {% endif %}
+                    </td>
+
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-muted text-center py-4">
+                        No applications found for this filter.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="section-note">
+            ℹ Admin has read-only view. Application status is managed by companies and automated on drive closure.
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex align-items-center justify-content-between px-3 py-3 flex-wrap gap-2">
+            <span class="text-muted small">
+                Page {{ apps.page }} of {{ apps.pages }}
+            </span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item {% if not apps.has_prev %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ url_for('admin.applications', filter=active_filter, page=apps.prev_num) }}">
+                            Previous
+                        </a>
+                    </li>
+                    {% for p in apps.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if p %}
+                            <li class="page-item {% if p == apps.page %}active{% endif %}">
+                                <a class="page-link"
+                                   href="{{ url_for('admin.applications', filter=active_filter, page=p) }}">
+                                    {{ p }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if not apps.has_next %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ url_for('admin.applications', filter=active_filter, page=apps.next_num) }}">
+                            Next
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

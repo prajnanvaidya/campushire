@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+
+<section class="auth-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-5 col-md-7 col-sm-10">
+
+                <div class="auth-card">
+
+                    <!-- Header -->
+                    <div class="auth-card-header text-center">
+                        <div class="auth-icon-wrap mb-3">
+                            <span class="auth-icon">🔐</span>
+                        </div>
+                        <h2 class="auth-title">Welcome Back</h2>
+                        <p class="auth-subtitle">Sign in to your CampusHire account</p>
+                    </div>
+
+                    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=True) %}
+                        {% if messages %}
+                            {% for category, msg in messages %}
+                                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show mx-4 mt-3" role="alert">
+                                    {{ msg }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <div class="px-4 pb-4 pt-3">
+                        <form method="POST">
+                            {{ form.hidden_tag() }}
+
+                            <!-- Role Selector -->
+                            <div class="auth-field mb-3">
+                                {{ form.role.label(class="auth-label") }}
+                                <div class="auth-role-group d-flex gap-2 mt-1">
+                                    {% for subfield in form.role %}
+                                    <label class="auth-role-option flex-fill text-center">
+                                        {{ subfield }}
+                                        <span>{{ subfield.label.text }}</span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <div class="auth-field mb-3">
+                                {{ form.email.label(class="auth-label") }}
+                                {{ form.email(class="form-control auth-input", placeholder="you@email.com") }}
+                            </div>
+
+                            <div class="auth-field mb-4">
+                                {{ form.password.label(class="auth-label") }}
+                                <div class="pw-wrap">
+                                    {{ form.password(class="form-control auth-input", placeholder="Your password", id="loginPassword") }}
+                                    <button type="button" class="pw-toggle" onclick="togglePw('loginPassword', this)">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {{ form.submit(class="btn auth-btn w-100", value="Sign In") }}
+                        </form>
+                    </div>
+
+                    <div class="auth-card-footer text-center">
+                        <p class="mb-0">Don't have an account?
+                            <a href="{{ url_for('auth.register') }}" class="auth-link">Register here</a>
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

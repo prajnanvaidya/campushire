@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+{% block title %}Companies — Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div>
+            <div class="page-title">Companies</div>
+            <div class="page-subtitle">
+                {% if active_filter == "all" %}
+                    All registered companies on CampusHire
+                {% elif active_filter == "approved" %}
+                    Companies approved and active on the platform
+                {% elif active_filter == "pending" %}
+                    Companies awaiting your approval
+                {% elif active_filter == "rejected" %}
+                    Companies whose registration was declined
+                {% else %}
+                    Companies removed from the platform
+                {% endif %}
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('admin.companies', filter='all') }}"
+               class="filter-pill {% if active_filter == 'all' %}active{% endif %}">All</a>
+            <a href="{{ url_for('admin.companies', filter='approved') }}"
+               class="filter-pill {% if active_filter == 'approved' %}active{% endif %}">Approved</a>
+            <a href="{{ url_for('admin.companies', filter='pending') }}"
+               class="filter-pill {% if active_filter == 'pending' %}active{% endif %}">Pending</a>
+            <a href="{{ url_for('admin.companies', filter='rejected') }}"
+               class="filter-pill {% if active_filter == 'rejected' %}active{% endif %}">Rejected</a>
+            <a href="{{ url_for('admin.companies', filter='blacklisted') }}"
+               class="filter-pill {% if active_filter == 'blacklisted' %}active{% endif %}">Blacklisted</a>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-mini">
+                <div class="stat-mini-num" style="color:#1a3d1a;">{{ total_companies }}</div>
+                <div class="stat-mini-label">Total companies</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-mini">
+                <div class="stat-mini-num" style="color:#3b6d11;">{{ approved_companies }}</div>
+                <div class="stat-mini-label">Approved</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-mini">
+                <div class="stat-mini-num" style="color:#854f0b;">{{ pending_companies }}</div>
+                <div class="stat-mini-label">Pending review</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-mini">
+                <div class="stat-mini-num" style="color:#a32d2d;">{{ blacklisted_companies }}</div>
+                <div class="stat-mini-label">Blacklisted</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card section-card">
+        <div class="section-card-header d-flex align-items-center justify-content-between">
+            <span class="title">Company List</span>
+            <span class="badge rounded-pill badge-closed">
+                {{ companies.first }}–{{ companies.last }} of {{ companies.total }}
+            </span>
+        </div>
+
+        <table class="admin-table table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Company</th>
+                    <th>Contact</th>
+                    <th>Registered</th>
+                    <th>Drives</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for company in companies.items %}
+                <tr>
+                    <!-- ID -->
+                    <td class="font-monospace text-muted small">{{ '%03d' % company.id }}</td>
+
+                    <!-- Name + website -->
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="company-av
+                                {% if company.is_blacklisted %}company-av-red
+                                {% elif company.approval_status == 'Pending' %}company-av-amber
+                                {% else %}company-av-green{% endif %}">
+                                {{ company.name[:2].upper() }}
+                            </div>
+                            <div>
+                                <div class="row-name">{{ company.name }}</div>
+                                <div class="row-meta">
+                                    {{ company.website if company.website else '—' }}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- Contact -->
+                    <td>
+                        <div class="row-name" style="font-size:0.82rem;">{{ company.email }}</div>
+                        <div class="row-meta">
+                            {{ company.hr_contact if company.hr_contact else '—' }}
+                        </div>
+                    </td>
+
+                    <!-- Registered date -->
+                    <td class="font-monospace text-muted small">
+                        {{ company.created_at.strftime('%d %b %Y') }}
+                    </td>
+
+                    <!-- Drives -->
+                    <td>
+                        {% if company.is_blacklisted %}
+                            <span class="badge rounded-pill badge-cancelled">Cancelled</span>
+                        {% elif company.approval_status == "Approved" %}
+                            <span class="badge rounded-pill badge-active">
+                                {{ drives.get(company.id, 0) }} active
+                            </span>
+                        {% else %}
+                            <span class="badge rounded-pill badge-closed">0 active</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Status -->
+                    <td>
+                        {% if company.is_blacklisted %}
+                            <span class="badge rounded-pill badge-rejected">Blacklisted</span>
+                        {% elif company.approval_status == "Approved" %}
+                            <span class="badge rounded-pill badge-active">Approved</span>
+                        {% elif company.approval_status == "Pending" %}
+                            <span class="badge rounded-pill badge-pending">Pending</span>
+                        {% else %}
+                            <span class="badge rounded-pill badge-rejected">Rejected</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Actions -->
+                    <td>
+                        <div class="d-flex gap-2 flex-wrap">
+
+                            <a href="{{ url_for('admin.companyProfile', id=company.id) }}"
+                                class="btn-view-action">View</a>
+
+                            {% if company.is_blacklisted %}
+                                <a href="{{ url_for('admin.undoBlacklist', role='company', id=company.id) }}"
+                                   class="btn-approve-action">Undo Blacklist</a>
+
+                            {% elif company.approval_status == "Pending" %}
+                                <a href="{{ url_for('admin.companyAction', action='Approve', id=company.id, next='companies') }}"
+                                   class="btn-approve-action">Approve</a>
+                                <a href="{{ url_for('admin.companyAction', action='Reject', id=company.id, next='companies') }}"
+                                   class="btn-decline-action">Reject</a>
+
+                            {% elif company.approval_status == "Approved" %}
+                                <a href="{{ url_for('admin.CompBlock', id=company.id, next='companies') }}"
+                                   class="btn-restrict">Blacklist</a>
+
+                            {% else %}
+                                <a href="{{ url_for('admin.ReapproveComp', id=company.id) }}"
+                                   class="btn-approve-action">Re-approve</a>
+                            {% endif %}
+                        </div>
+                    </td>
+
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-muted text-center py-4">
+                        No companies found for this filter.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Info note -->
+        <div class="section-note">
+            ℹ Blacklisting a company immediately cancels all its active drives and withdraws all student applications for those drives.
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex align-items-center justify-content-between px-3 py-3 flex-wrap gap-2">
+            <span class="text-muted small">
+                Page {{ companies.page }} of {{ companies.pages }}
+            </span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item {% if not companies.has_prev %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ url_for('admin.companies', filter=active_filter, page=companies.prev_num) }}">
+                            Previous
+                        </a>
+                    </li>
+                    {% for p in companies.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if p %}
+                            <li class="page-item {% if p == companies.page %}active{% endif %}">
+                                <a class="page-link"
+                                   href="{{ url_for('admin.companies', filter=active_filter, page=p) }}">
+                                    {{ p }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if not companies.has_next %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ url_for('admin.companies', filter=active_filter, page=companies.next_num) }}">
+                            Next
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

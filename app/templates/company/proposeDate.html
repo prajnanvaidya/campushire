@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Propose New Drive Date{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4" style="max-width:580px;">
+
+    <!-- Back -->
+    <a href="{{ redirect_to }}"
+       class="d-inline-flex align-items-center gap-1 mb-4 text-decoration-none fw-semibold small"
+       style="color:#2e7d32;">
+        &larr; Back to {{back}}
+    </a>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            {% for category, msg in messages %}
+                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show mb-3">
+                    {{ msg }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Page heading -->
+    <div class="mb-4">
+        <div class="page-title">Propose New Drive Date</div>
+        <div class="page-subtitle">Suggest a revised date for admin to review and confirm.</div>
+    </div>
+
+    <!-- Drive Details Card -->
+    <div class="card section-card mb-3">
+        <div class="section-card-header">
+            <span class="title">Drive Details</span>
+        </div>
+        <div class="p-4">
+
+            <!-- Drive info -->
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="propose-drive-av">
+                    {{ (drive.job_title or 'NA')[:2].upper() }}
+                </div>
+                <div>
+                    <div class="row-name">{{ drive.job_title }}</div>
+                    <div class="row-meta">
+                        {{ drive.company.name }}
+                        {% if drive.salary_package %}
+                            &nbsp;·&nbsp; {{ drive.salary_package }} LPA
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Previously proposed date — struck through -->
+            <div class="propose-curr-row">
+                <span>Previously proposed date</span>
+                <span>{{ drive.drive_date.strftime('%d %b %Y') }}</span>
+            </div>
+
+            <!-- Admin rejection note -->
+            {% if drive.date_rejection_note %}
+            <div class="propose-rej-note">
+                <strong>Admin's reason for rejection:</strong><br>
+                {{ drive.date_rejection_note }}
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <!-- New Date Form Card -->
+    <div class="card section-card">
+        <div class="section-card-header">
+            <span class="title">New Date</span>
+        </div>
+        <div class="p-4">
+
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="mb-3">
+                    {{ form.newDate.label(class="drive-form-label") }}
+                    {{ form.newDate(class="drive-form-input") }}
+                    <div class="drive-form-hint">
+                        Choose a date after the application deadline
+                        and after any admin-mentioned constraints.
+                    </div>
+                    {% for error in form.newDate.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                {{ form.submit(class="drive-submit-btn",
+                               value="Submit New Date for Approval") }}
+
+            </form>
+
+            <a href="{{ url_for('company.dashboard') }}" class="drive-cancel-link">
+                Cancel — go back
+            </a>
+
+        </div>
+        <div class="section-note">
+            ℹ The new date will be sent to admin for approval.
+            Students cannot apply until confirmed.
+        </div>
+    </div>
+
+</div>
+{% endblock %}

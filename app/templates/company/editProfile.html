@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}Edit Profile — {{ company.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4" style="max-width:680px;">
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}{% for category, msg in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show mb-3">
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}{% endif %}
+    {% endwith %}
+
+    <div class="mb-4">
+        <div class="page-title">Edit Profile</div>
+        <div class="page-subtitle">Update your company details</div>
+    </div>
+
+    <!-- Identity Card — read only -->
+    <div class="card section-card mb-3">
+        <div class="section-card-header">
+            <span class="title">Company Identity</span>
+            <span class="text-muted small">Read only — contact admin to change</span>
+        </div>
+        <div class="p-4">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="profile-av-lg company-av-green">
+                    {{ (company.name or 'NA')[:2].upper() }}
+                </div>
+                <div>
+                    <div class="row-name" style="font-size:1rem;">{{ company.name }}</div>
+                    <div class="row-meta">Member since {{ company.created_at.strftime('%d %b %Y') }}</div>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="profile-field-label">Company Name</label>
+                    <input type="text" class="profile-field-input profile-readonly"
+                           value="{{ company.name }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="profile-field-label">Email</label>
+                    <input type="text" class="profile-field-input profile-readonly"
+                           value="{{ company.email }}" readonly>
+                </div>
+            </div>
+        </div>
+        <div class="section-note">
+            ℹ Company name and email cannot be changed. Contact the placement coordinator if correction is needed.
+        </div>
+    </div>
+
+    <!-- Editable Fields -->
+    <form method="POST" action="{{ url_for('company.editProfile') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="card section-card mb-3">
+            <div class="section-card-header">
+                <span class="title">Contact & Details</span>
+            </div>
+            <div class="p-4">
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label class="profile-field-label">HR Contact</label>
+                        <input type="text" name="hr_contact"
+                               class="profile-field-input"
+                               value="{{ company.hr_contact if company.hr_contact else '' }}"
+                               placeholder="10-digit phone number"
+                               maxlength="10">
+                        <div class="profile-field-hint">HR department contact number</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="profile-field-label">Website</label>
+                        <input type="text" name="website"
+                               class="profile-field-input"
+                               value="{{ company.website if company.website else '' }}"
+                               placeholder="https://yourcompany.com">
+                        <div class="profile-field-hint">Must start with http:// or https://</div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="profile-field-label">Description</label>
+                        <textarea name="description" rows="4"
+                                  class="profile-field-input"
+                                  placeholder="Brief description of your company...">{{ company.description if company.description else '' }}</textarea>
+                        <div class="profile-field-hint">Visible to students on the companies page</div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end">
+            <button type="submit" class="profile-save-btn">Save Changes</button>
+        </div>
+
+    </form>
+
+</div>
+{% endblock %}
