@@ -20,7 +20,7 @@ class Company(db.Model):
     website=db.Column(db.String(200))
     description=db.Column(db.Text)  
     
-    approval_status=db.Column(db.Enum("Pending", "Approved", "Rejected"), default="Pending", nullable=False)
+    approval_status=db.Column(db.Enum("Pending", "Approved", "Rejected", name="company_approval_status"), default="Pending", nullable=False)
     is_blacklisted=db.Column(db.Boolean, default=False)
     created_at=db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -62,7 +62,7 @@ class PlacementDrive(db.Model):
     application_deadline = db.Column(db.Date, nullable=False)
     drive_date=db.Column(db.Date, nullable=False)
 
-    approval_status=db.Column(db.Enum("Pending","Approved", "Rejected", "Closed"), default="Pending", nullable=False)
+    approval_status=db.Column(db.Enum("Pending","Approved", "Rejected", "Closed", name="drive_approval_status"), default="Pending", nullable=False)
     date_rejected=db.Column(db.Boolean, default=False)
     date_rejection_note=db.Column(db.String(300), nullable=True )  
     created_at=db.Column(db.DateTime, default=datetime.utcnow)
@@ -76,7 +76,7 @@ class Application(db.Model):
     student_id=db.Column(db.Integer, db.ForeignKey("students.id"), nullable=False)
     drive_id=db.Column(db.Integer, db.ForeignKey("placement_drives.id"), nullable=False)
 
-    status=db.Column(db.Enum("Applied", "Cancelled", "Selected", "Rejected"), default="Applied", nullable=False)
+    status=db.Column(db.Enum("Applied", "Cancelled", "Selected", "Rejected", name="application_status"), default="Applied", nullable=False)
     created_at=db.Column(db.DateTime, default=datetime.utcnow)
 
     __table_args__=(db.UniqueConstraint("student_id", "drive_id", name="unique_student_application"), )
