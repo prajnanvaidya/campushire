@@ -25,9 +25,6 @@ instance/
 .DS_Store
 Thumbs.db
 
-# Migrations 
-migrations/
-
 # Distribution / packaging
 *.egg-info/
 dist/
