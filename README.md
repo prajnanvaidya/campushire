@@ -1,12 +1,17 @@
 # CampusHire — Campus Placement Management System
 
-A full-stack web application that simplifies and centralises the campus placement process for students, companies, and placement administrators. Built with Flask, SQLAlchemy, and Bootstrap 5.
+> A full-stack web application that simplifies and centralises the campus placement process for students, recruiting companies, and placement administrators.
+
+**🔗 Live Demo:** [https://campushire-ay0t.onrender.com](https://campushire-ay0t.onrender.com)
+
+> ⚠️ Hosted on Render's free tier — the server may take 30–60 seconds to wake up on first visit after a period of inactivity. This is normal behaviour for free tier deployments.
 
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
+- [Live Demo](#live-demo)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
@@ -16,6 +21,7 @@ A full-stack web application that simplifies and centralises the campus placemen
 - [User Roles](#user-roles)
 - [Workflow](#workflow)
 - [Database Models](#database-models)
+- [Author](#author)
 
 ---
 
@@ -27,36 +33,52 @@ The platform handles the complete placement lifecycle — from company registrat
 
 ---
 
+## Live Demo
+
+🌐 **[https://campushire-ay0t.onrender.com](https://campushire-ay0t.onrender.com)**
+
+### Test Credentials
+
+You can explore the app using the following test accounts:
+
+| Role | How to access |
+|---|---|
+| Admin | Contact via repo |
+| Company | Register at `/register` → Company tab — requires admin approval |
+| Student | Register at `/register` → Student tab — immediate access |
+
+---
+
 ## Features
 
 ### Admin
 - Approve or reject company registrations
-- Approve or reject proposed drive dates
+- Approve or reject proposed placement drive dates
 - Blacklist and un-blacklist companies and students
 - View all companies, students, drives, and applications with filters and pagination
-- Search across students and companies
+- Search across students and companies by name, email, USN, or branch
 - View recruited student details per drive
 
 ### Company
-- Register and await admin approval
-- Create placement drives with job details, eligibility criteria, and salary
+- Register and await admin approval before accessing the full dashboard
+- Create placement drives with job title, description, salary, and eligibility criteria
 - Propose drive dates for admin confirmation
-- Re-propose dates if admin rejects them
+- Re-propose dates if admin rejects the proposed date
 - Review student applications and mark as Selected or Rejected
-- View drive profiles and application history
+- View drive profiles, application history, and recruited students
 
 ### Student
-- Register with academic details and resume link
-- Browse approved companies and placement drives
-- Apply to eligible drives (eligibility enforced by CGPA, branch, graduation year)
-- Track application statuses in real time
-- View placement record if selected
+- Register with academic details — branch, CGPA, graduation year, and resume link
+- Browse approved companies and their open placement drives
+- Apply to eligible drives — eligibility enforced by CGPA, branch, and graduation year
+- Track all application statuses in real time
+- View placement record on dashboard once selected by a company
 
 ### System
 - Automatic drive closure when drive date passes
-- Automatic application cancellation when company is blacklisted
+- Automatic application cancellation when a company is blacklisted
 - Automatic application restoration when blacklist is lifted
-- Eligibility enforcement at application time — ineligible students cannot apply
+- Eligibility enforcement at apply time — ineligible students cannot apply
 
 ---
 
@@ -66,20 +88,22 @@ The platform handles the complete placement lifecycle — from company registrat
 |---|---|
 | Backend | Python 3, Flask |
 | Database ORM | Flask-SQLAlchemy |
-| Database | SQLite |
+| Database | PostgreSQL (production), SQLite (local development) |
 | Migrations | Flask-Migrate (Alembic) |
 | Forms & Validation | Flask-WTF, WTForms |
 | Authentication | Werkzeug password hashing, Flask session |
 | Email | Flask-Mail (Gmail SMTP) |
 | Frontend | Jinja2, Bootstrap 5.1.3, Bootstrap Icons |
 | Environment | python-dotenv |
+| Production Server | Gunicorn |
+| Hosting | Render |
 
 ---
 
 ## Project Structure
 
 ```
-placement-portal-application-v1/
+campushire/
 ├── app/
 │   ├── __init__.py          # App factory, extensions initialisation
 │   ├── models.py            # SQLAlchemy models
@@ -129,7 +153,7 @@ placement-portal-application-v1/
 
 **1. Clone the repository**
 ```bash
-git clone https://github.com/yourusername/campushire.git
+git clone https://github.com/prajnanvaidya/campushire.git
 cd campushire
 ```
 
@@ -182,7 +206,7 @@ Copy `.env.example` to `.env` and fill in the following:
 # Application
 SECRET_KEY=your-secret-key-here
 
-# Database
+# Database — use sqlite:///site.db for local, postgresql://... for production
 DATABASE_URL=sqlite:///site.db
 
 # Mail (Gmail SMTP)
@@ -215,7 +239,7 @@ The admin account does not go through the registration form. After setting up th
 python create_admin.py
 ```
 
-This reads `ADMIN_EMAIL` and `ADMIN_PASSWORD` from your `.env` and inserts the admin record into the database. Run this only once. If you run it again on an existing email it will skip and print a message.
+This reads `ADMIN_EMAIL` and `ADMIN_PASSWORD` from your `.env` and inserts the admin record into the database. Running it again on an existing email safely skips without duplicating — it prints a message and exits cleanly.
 
 ---
 
@@ -223,14 +247,14 @@ This reads `ADMIN_EMAIL` and `ADMIN_PASSWORD` from your `.env` and inserts the a
 
 ### Admin
 - Logs in at `/login` with role = Admin
-- Pre-seeded via `create_admin.py`
+- Pre-seeded via `create_admin.py` — not available through the registration form
 - Full control over companies, students, drives, and applications
 
 ### Company
 - Registers at `/register` → Company tab
-- Starts with `approval_status = Pending`
-- Cannot create drives until admin approves registration
-- Can be blacklisted — all drives cancelled, all applications withdrawn
+- Starts with `approval_status = Pending` — dashboard is locked until admin approves
+- Can be blacklisted — all drives are cancelled and all applications are withdrawn
+- Blacklist can be reversed by admin — drives restore to Pending, applications restore to Applied
 
 ### Student
 - Registers at `/register` → Student tab
@@ -245,15 +269,15 @@ This reads `ADMIN_EMAIL` and `ADMIN_PASSWORD` from your `.env` and inserts the a
 ```
 1. Company registers → status: Pending
 2. Admin approves company → status: Approved
-3. Company creates a drive → drive status: Pending
-4. Admin approves drive date → drive status: Approved
-   └── If admin rejects date → company proposes new date → back to Pending
-5. Students apply to approved drives
-   └── Eligibility checked at apply time (CGPA, branch, batch)
-6. Drive date passes → auto-closes → status: Closed
-   └── Applied applications → Rejected automatically
-7. Company reviews applications → marks Selected or Rejected
-8. Selected students see placement record on dashboard
+3. Company creates a placement drive → drive status: Pending
+4. Admin reviews and approves the drive date → drive status: Approved
+   └── If admin rejects the date → company proposes a new date → back to Pending
+5. Students browse approved drives and apply
+   └── Eligibility checked at apply time (CGPA, branch, graduation year)
+6. Drive date passes → drive auto-closes → status: Closed
+   └── Remaining Applied applications → auto-Rejected
+7. Company reviews applications → marks each as Selected or Rejected
+8. Selected students see a placement record card on their dashboard
 ```
 
 ---
@@ -264,32 +288,34 @@ This reads `ADMIN_EMAIL` and `ADMIN_PASSWORD` from your `.env` and inserts the a
 |---|---|
 | `Admin` | Placement administrator account |
 | `Company` | Recruiting company with approval and blacklist status |
-| `Student` | Student with academic details and resume |
-| `PlacementDrive` | A drive posted by a company with eligibility, dates, and approval state |
+| `Student` | Student with academic details and resume link |
+| `PlacementDrive` | A drive posted by a company with eligibility criteria, dates, and approval state |
 | `Application` | A student's application to a drive with outcome status |
-| `PlacementStat` | Final placement record (optional, for reporting) |
+| `PlacementStat` | Final placement record for reporting |
 
 ### Application Status Flow
 ```
-Applied → Selected  (company selects after interview)
-Applied → Rejected  (company rejects, or drive auto-closes)
-Applied → Cancelled (company blacklisted, or student blacklisted)
+Applied → Selected   (company selects the student after interview)
+Applied → Rejected   (company rejects, or drive auto-closes after drive date)
+Applied → Cancelled  (company or student is blacklisted by admin)
 ```
 
 ### Drive Status Flow
 ```
 Pending  → Approved  (admin approves the proposed drive date)
-Pending  → Rejected  (company was blacklisted — all drives cancelled)
-Approved → Closed    (drive date passes — auto-closed by system)
+Pending  → Rejected  (company was blacklisted — all active drives cancelled)
+Approved → Closed    (drive date passes — auto-closed by the system)
 ```
 
-> Note: Date rejection is separate from drive status. When admin rejects a proposed
-> date, `date_rejected` is set to `True` while the drive status remains `Pending`.
-> The company is notified to propose a new date. Once a new date is submitted,
-> `date_rejected` resets to `False` and the drive goes back into admin review.
+> **Note on date rejection:** When admin rejects a proposed drive date, `date_rejected`
+> is set to `True` while the drive `approval_status` remains `Pending`. The company
+> sees a banner notifying them to propose a new date. Once submitted, `date_rejected`
+> resets to `False` and the drive re-enters the admin review queue.
 
 ---
 
 ## Author
 
 Developed as a college project to digitise and streamline the campus placement process.
+
+**GitHub:** [prajnanvaidya](https://github.com/prajnanvaidya)
